@@ -163,11 +163,7 @@ int main(int argc, char **argv)
 		    if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
 		    {
 			ROS_INFO("Offboard enabled");
-			ROS_INFO("Connected: %s", current_state.connected ? "true" : "false");
-            ROS_INFO("Armed: %s", current_state.armed ? "true" : "false");
-            ROS_INFO("Guided: %s", current_state.guided ? "true" : "false");
             ROS_INFO("Mode: %s", current_state.mode.c_str());
-            ROS_INFO("System Status: %u", current_state.system_status);
 		    }
 		    last_request = ros::Time::now();
 		}

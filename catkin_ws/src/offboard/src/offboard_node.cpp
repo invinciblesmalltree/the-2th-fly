@@ -97,13 +97,12 @@ int main(int argc, char **argv)
         }
 
         //到达第点1，发布点2
-        if(reached_first_point)
+        if(reached_first_point && !reached_second_point)
         {
             local_pos_pub.publish(pose2);
         }
         else
         {
-            local_pos_pub.publish(pose1);
             if (ros::Time::now() - last_request > ros::Duration(10.0))
             {
                 reached_first_point = true;
@@ -113,13 +112,12 @@ int main(int argc, char **argv)
         }
 
         //到达点2，发布点3
-        if(reached_first_point)
+        if(reached_second_point)
         {
             local_pos_pub.publish(pose3);
         }
         else
         {
-            local_pos_pub.publish(pose2);
             if (ros::Time::now() - last_request > ros::Duration(10.0))
             {
                 reached_second_point = true;

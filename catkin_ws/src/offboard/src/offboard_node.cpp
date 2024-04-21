@@ -9,6 +9,7 @@ class move_to_target
         float x,y,z;
         bool reach = false;
 
+    public:
         move_to_target(float x,float y,float z)
         {
             this->x=x;
@@ -16,7 +17,6 @@ class move_to_target
             this->z=z;
         }
 
-    public:
         void fly_to_target(ros::Publisher &local_pos_pub) {
             geometry_msgs::PoseStamped pose;
             pose.pose.position.x = x;
@@ -44,6 +44,10 @@ int main(int argc, char **argv)
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
+    move_to_target target1(0.0, 0.0, 1.0);
+    move_to_target target2(2.0, 0.0, 1.0);
+    move_to_target target3(2.0, 0.0, 0.05);
+
     while(ros::ok() && !current_state.connected)
     {
         ros::spinOnce();
@@ -52,7 +56,7 @@ int main(int argc, char **argv)
 
     for(int i = 100; ros::ok() && i > 0; --i)
     {
-        local_pos_pub.publish(pose1);
+        target1.fly_to_target(local_pose_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -64,10 +68,6 @@ int main(int argc, char **argv)
     arm_cmd.request.value = true;
 
     ros::Time last_request = ros::Time::now();
-
-    move_to_target target1(0.0, 0.0, 1.0);
-    move_to_target target2(2.0, 0.0, 1.0);
-    move_to_target target3(2.0, 0.0, 0.05);
 
     while(ros::ok())
     {

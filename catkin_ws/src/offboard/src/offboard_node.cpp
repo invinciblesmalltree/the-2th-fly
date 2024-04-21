@@ -6,10 +6,10 @@
 
 class move_to_target
 {
+    public:
         float x,y,z;
         bool reach = false;
 
-    public:
         move_to_target(float x,float y,float z)
         {
             this->x=x;
@@ -25,13 +25,10 @@ class move_to_target
 
             local_pos_pub.publish(pose);
         }
-}
+};
 
 mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr& msg)
-{
-    current_state = *msg;
-}
+void state_cb(const mavros_msgs::State::ConstPtr& msg);
 
 int main(int argc, char **argv)
 {
@@ -56,7 +53,7 @@ int main(int argc, char **argv)
 
     for(int i = 100; ros::ok() && i > 0; --i)
     {
-        target1.fly_to_target(local_pose_pub);
+        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -108,7 +105,7 @@ int main(int argc, char **argv)
             target2.fly_to_target(local_pos_pub);
             if (ros::Time::now() - last_request > ros::Duration(10.0))
             {
-                reached_second_point = true;
+                target2.reach = true;
                 ROS_INFO("Reached second point");
                 last_request = ros::Time::now();
             }
@@ -129,4 +126,9 @@ int main(int argc, char **argv)
         rate.sleep();
     }
     return 0;
+}
+
+void state_cb(const mavros_msgs::State::ConstPtr& msg)
+{
+    current_state = *msg;
 }

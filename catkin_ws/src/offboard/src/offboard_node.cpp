@@ -106,6 +106,7 @@ int main(int argc, char **argv)
                     {
                         ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
                         flag++;
+                        break;
                     }
                 case 2:
                     target1.fly_to_target(local_pos_pub);
@@ -115,6 +116,7 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached first point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 3:
                     target2.fly_to_target(local_pos_pub);
@@ -124,6 +126,7 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached second point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 4:
                     target3.fly_to_target(local_pos_pub);
@@ -133,6 +136,7 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached third point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 5:
                     target4.fly_to_target(local_pos_pub);
@@ -142,6 +146,7 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached forth point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 6:
                     target5.fly_to_target(local_pos_pub);
@@ -151,6 +156,7 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached fifth point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 7:
                     target6.fly_to_target(local_pos_pub);
@@ -160,12 +166,14 @@ int main(int argc, char **argv)
                         ROS_INFO("Reached sixth point");
                         last_request = ros::Time::now();
                         flag++;
+                        break;
                     }
                 case 8:
                     if (land_client.call(srv_land) && srv_land.response.success && ros::Time::now() - last_request > ros::Duration(5.0))
                     {
                         ROS_INFO("land sent %d", srv_land.response.success);
                         flag++;
+                        break;
                     }
             }
         }

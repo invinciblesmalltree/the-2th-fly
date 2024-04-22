@@ -1,7 +1,6 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/CommandTOL.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
@@ -40,19 +39,21 @@ int main(int argc, char **argv)
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped> ("mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
-    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
-    ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
     ros::Rate rate(20.0);
 
-    move_to_target target1(2.82, 0.0, 1.0);
-    move_to_target target2(3.55, -0.43, 1.0);
-    move_to_target target3(3.225, -1.165, 1.0);
-    move_to_target target4(3.225, -1.48, 1.0);
-    move_to_target target5(2.82, -2.00, 1.0);
-    move_to_target target6(0, -2.00, 1.0);
+    move_to_target target1(0.0, 0.0, 1.0);
+    move_to_target target2(2.0, 0.0, 1.0);
+    move_to_target target3(2.0, 0.0, 0.05);
 
     while(ros::ok() && !current_state.connected)
     {
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    for(int i = 100; ros::ok() && i > 0; --i)
+    {
+        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -63,23 +64,16 @@ int main(int argc, char **argv)
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
 
-    mavros_msgs::CommandTOL srv_takeoff;
-    srv_takeoff.request.altitude = 1.0; //高度1米
-
-    mavros_msgs::CommandTOL srv_land;
-
     ros::Time last_request = ros::Time::now();
-    int flag=1, check=0;
 
-    //主循环
     while(ros::ok())
     {
+ 
         if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
         {
             if( arming_client.call(arm_cmd) && arm_cmd.response.success)
             {
                 ROS_INFO("Vehicle armed");
-                check++;
             }
             last_request = ros::Time::now();
         }
@@ -91,102 +85,57 @@ int main(int argc, char **argv)
                 {
                     ROS_INFO("Offboard enabled");
                     ROS_INFO("Mode: %s", current_state.mode.c_str());
-                    check++;
                 }
                 last_request = ros::Time::now();
             }
         }
 
-        if(check==2)
+        if(!target1.reach && !target2.reach && !target3.reach)
         {
-            switch(flag)
+            target1.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(10.0))
             {
-                case 1:
-                    if(takeoff_cl.call(srv_takeoff) && srv_takeoff.response.success && ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
-                        flag++;
-                    }
-                    break;
-                case 2:
-                    target1.fly_to_target(local_pos_pub);
-                    if (ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target1.reach = true;
-                        ROS_INFO("Reached first point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 3:
-                    target2.fly_to_target(local_pos_pub);
-                    if (ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target2.reach = true;
-                        ROS_INFO("Reached second point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 4:
-                    target3.fly_to_target(local_pos_pub);
-                    if(ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target3.reach = true;
-                        ROS_INFO("Reached third point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 5:
-                    target4.fly_to_target(local_pos_pub);
-                    if (ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target4.reach = true;
-                        ROS_INFO("Reached forth point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 6:
-                    target5.fly_to_target(local_pos_pub);
-                    if (ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target5.reach = true;
-                        ROS_INFO("Reached fifth point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 7:
-                    target6.fly_to_target(local_pos_pub);
-                    if (ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        target6.reach = true;
-                        ROS_INFO("Reached sixth point");
-                        last_request = ros::Time::now();
-                        flag++;
-                    }
-                    break;
-                case 8:
-                    if (land_client.call(srv_land) && srv_land.response.success && ros::Time::now() - last_request > ros::Duration(5.0))
-                    {
-                        ROS_INFO("land sent %d", srv_land.response.success);
-                        flag++;
-                    }
-                    break;
+                target1.reach = true;
+                ROS_INFO("Reached first point");
+                last_request = ros::Time::now();
             }
         }
+        else if(target1.reach && !target2.reach && !target3.reach)
+        {
+            target2.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(10.0))
+            {
+                target2.reach = true;
+                ROS_INFO("Reached second point");
+                last_request = ros::Time::now();
+            }
+        }
+        else if(target1.reach && target2.reach && !target3.reach)
+        {
+            target3.fly_to_target(local_pos_pub);
+            if(ros::Time::now() - last_request > ros::Duration(10.0))
+            {
+                target3.reach = true;
+                ROS_INFO("Reached third point, wait 5 seconds to turn off");
+                last_request = ros::Time::now();
+                break;
+            }
+        }
+
         ros::spinOnce();
         rate.sleep();
+        if(target1.reach && target2.reach && target3.reach)
+        {
+            target3.fly_to_target(local_pos_pub);
+            if(ros::Time::now() - last_request > ros::Duration(3.0))
+            {
+                target3.reach = true;
+                ROS_INFO("Landing now");
+                last_request = ros::Time::now();
+                break;
+            }
+        }
     }
-
-    while (ros::ok())
-    {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
     return 0;
 }
 

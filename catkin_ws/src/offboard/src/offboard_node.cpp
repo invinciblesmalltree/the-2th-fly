@@ -102,7 +102,7 @@ int main(int argc, char **argv)
             switch(flag)
             {
                 case 1:
-                    if(takeoff_cl.call(srv_takeoff))
+                    if(takeoff_cl.call(srv_takeoff) && srv_takeoff.response.success && ros::Time::now() - last_request > ros::Duration(5.0))
                     {
                         ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
                         flag++;
@@ -162,19 +162,21 @@ int main(int argc, char **argv)
                         flag++;
                     }
                 case 8:
-                    if (land_client.call(srv_land) && srv_land.response.success)
+                    if (land_client.call(srv_land) && srv_land.response.success && ros::Time::now() - last_request > ros::Duration(5.0))
                     {
                         ROS_INFO("land sent %d", srv_land.response.success);
                         flag++;
                     }
             }
         }
+        ros::spinOnce();
+        rate.sleep();
     }
 
     while (ros::ok())
     {
-         ros::spinOnce();
-         rate.sleep();
+        ros::spinOnce();
+        rate.sleep();
     }
 
     return 0;

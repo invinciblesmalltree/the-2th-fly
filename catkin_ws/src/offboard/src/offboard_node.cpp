@@ -85,8 +85,8 @@ int main(int argc, char **argv)
     }
 
     //takeoff
-    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
-    mavros_msgs::CommandTOL srv_takeoff;
+    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/takeoff");
+    mavros_msgs::CommandBool srv_takeoff;
     srv_takeoff.request.altitude = 1.0; //高度1米
     if(takeoff_cl.call(srv_takeoff))
         ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
@@ -152,8 +152,8 @@ int main(int argc, char **argv)
                 }
 
         //land
-        ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
-        mavros_msgs::CommandTOL srv_land;
+        ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/land");
+        mavros_msgs::CommandBool srv_land;
         if (land_client.call(srv_land) && srv_land.response.success)
                 ROS_INFO("land sent %d", srv_land.response.success);
 

@@ -40,6 +40,8 @@ int main(int argc, char **argv)
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped> ("mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
+    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
+    ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
     ros::Rate rate(20.0);
 
     move_to_target target1(2.82, 0.0, 1.0);
@@ -60,6 +62,11 @@ int main(int argc, char **argv)
 
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
+
+    mavros_msgs::CommandTOL srv_takeoff;
+    srv_takeoff.request.altitude = 1.0; //高度1米
+
+    mavros_msgs::CommandTOL srv_land;
 
     ros::Time last_request = ros::Time::now();
 
@@ -87,17 +94,16 @@ int main(int argc, char **argv)
             }
         }
 
-        //takeoff
-        ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/takeoff");
-        mavros_msgs::CommandBool srv_takeoff;
-        srv_takeoff.request.altitude = 1.0; //高度1米
-        if(takeoff_cl.call(srv_takeoff))
-            ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
-
         int flag=1;
         switch(flag)
         {
             case 1:
+                if(takeoff_cl.call(srv_takeoff))
+                {
+                    ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
+                    flag++;
+                }
+            case 2:
                 target1.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -106,7 +112,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-            case 2:
+            case 3:
                 target2.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -115,7 +121,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-            case 3:
+            case 4:
                 target3.fly_to_target(local_pos_pub);
                 if(ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -124,7 +130,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-            case 4:
+            case 5:
                 target4.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -133,7 +139,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-            case 5:
+            case 6:
                 target5.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -142,7 +148,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-            case 6:
+            case 7:
                 target6.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
@@ -151,20 +157,21 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
-        }
-
-        //land
-        ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/land");
-        mavros_msgs::CommandBool srv_land;
-        if (land_client.call(srv_land) && srv_land.response.success)
-                ROS_INFO("land sent %d", srv_land.response.success);
-
-        while (ros::ok())
-        {
-            ros::spinOnce();
-            rate.sleep();
+            case 8:
+                if (land_client.call(srv_land) && srv_land.response.success)
+                {
+                    ROS_INFO("land sent %d", srv_land.response.success);
+                    flag++;
+                }
         }
     }
+
+    while (ros::ok())
+    {
+         ros::spinOnce();
+         rate.sleep();
+    }
+
     return 0;
 }
 

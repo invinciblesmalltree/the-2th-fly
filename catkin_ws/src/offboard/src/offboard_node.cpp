@@ -41,19 +41,15 @@ int main(int argc, char **argv)
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    move_to_target target1(0.0, 0.0, 1.0);
-    move_to_target target2(2.0, 0.0, 1.0);
-    move_to_target target3(2.0, 0.0, 0.05);
+    move_to_target target1(2.82, 0.0, 1.0);
+    move_to_target target2(3.55, -0.43, 1.0);
+    move_to_target target3(3.225, -1.165, 1.0);
+    move_to_target target4(3.225, -1.48, 1.0);
+    move_to_target target5(2.82, -2.00, 1.0);
+    move_to_target target6(0, -2.00, 1.0);
 
     while(ros::ok() && !current_state.connected)
     {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    for(int i = 100; ros::ok() && i > 0; --i)
-    {
-        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -66,64 +62,106 @@ int main(int argc, char **argv)
 
     ros::Time last_request = ros::Time::now();
 
-    while(ros::ok())
+    //offboard+arm
+    if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
     {
- 
-        if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
+        if( arming_client.call(arm_cmd) && arm_cmd.response.success)
         {
-            if( arming_client.call(arm_cmd) && arm_cmd.response.success)
+            ROS_INFO("Vehicle armed");
+        }
+        last_request = ros::Time::now();
+    }
+    else
+    {
+        if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0)))
+        {
+            if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
             {
-                ROS_INFO("Vehicle armed");
+                ROS_INFO("Offboard enabled");
+                ROS_INFO("Mode: %s", current_state.mode.c_str());
             }
             last_request = ros::Time::now();
         }
-        else
-        {
-            if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0)))
-            {
-                if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
+    }
+
+    //takeoff
+    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
+    mavros_msgs::CommandTOL srv_takeoff;
+    srv_takeoff.request.altitude = 1.0; //高度1米
+    if(takeoff_cl.call(srv_takeoff))
+        ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
+
+    //主循环
+    while(ros::ok())
+    {
+        int flag=1;
+        switch(flag)
+            case 1:
+                target1.fly_to_target(local_pos_pub);
+                if (ros::Time::now() - last_request > ros::Duration(5.0))
                 {
-                    ROS_INFO("Offboard enabled");
-                    ROS_INFO("Mode: %s", current_state.mode.c_str());
+                    target1.reach = true;
+                    ROS_INFO("Reached first point");
+                    last_request = ros::Time::now();
+                    flag++;
                 }
-                last_request = ros::Time::now();
-            }
-        }
+            case 2:
+                target2.fly_to_target(local_pos_pub);
+                if (ros::Time::now() - last_request > ros::Duration(5.0))
+                {
+                    target2.reach = true;
+                    ROS_INFO("Reached second point");
+                    last_request = ros::Time::now();
+                    flag++;
+                }
+            case 3:
+                target3.fly_to_target(local_pos_pub);
+                if(ros::Time::now() - last_request > ros::Duration(5.0))
+                {
+                    target3.reach = true;
+                    ROS_INFO("Reached third point");
+                    last_request = ros::Time::now();
+                    flag++;
+                }
+            case 4:
+                target4.fly_to_target(local_pos_pub);
+                if (ros::Time::now() - last_request > ros::Duration(5.0))
+                {
+                    target4.reach = true;
+                    ROS_INFO("Reached forth point");
+                    last_request = ros::Time::now();
+                    flag++;
+                }
+            case 5:
+                target5.fly_to_target(local_pos_pub);
+                if (ros::Time::now() - last_request > ros::Duration(5.0))
+                {
+                    target5.reach = true;
+                    ROS_INFO("Reached fifth point");
+                    last_request = ros::Time::now();
+                    flag++;
+                }
+            case 6:
+                target6.fly_to_target(local_pos_pub);
+                if (ros::Time::now() - last_request > ros::Duration(5.0))
+                {
+                    target6.reach = true;
+                    ROS_INFO("Reached sixth point");
+                    last_request = ros::Time::now();
+                    flag++;
+                }
 
-        if(!target1.reach && !target2.reach && !target3.reach)
-        {
-            target1.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(10.0))
-            {
-                target1.reach = true;
-                ROS_INFO("Reached first point");
-                last_request = ros::Time::now();
-            }
-        }
-        else if(target1.reach && !target2.reach && !target3.reach)
-        {
-            target2.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(10.0))
-            {
-                target2.reach = true;
-                ROS_INFO("Reached second point");
-                last_request = ros::Time::now();
-            }
-        }
-        else if(target1.reach && target2.reach && !target3.reach)
-        {
-            target3.fly_to_target(local_pos_pub);
-            if(ros::Time::now() - last_request > ros::Duration(10.0))
-            {
-                target3.reach = true;
-                ROS_INFO("Reached third point, turn off");
-                last_request = ros::Time::now();
-                break;
-            }
-        }
+        //land
+        ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
+        mavros_msgs::CommandTOL srv_land;
+        if (land_client.call(srv_land) && srv_land.response.success)
+                ROS_INFO("land sent %d", srv_land.response.success);
 
-        ros::spinOnce();
-        rate.sleep();
+        while (ros::ok())
+        {
+            ros::spinOnce();
+            rate.sleep();
+        }
     }
     return 0;
 }

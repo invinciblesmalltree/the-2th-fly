@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/CommandTOL.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
@@ -62,40 +63,40 @@ int main(int argc, char **argv)
 
     ros::Time last_request = ros::Time::now();
 
-    //offboard+arm
-    if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
-    {
-        if( arming_client.call(arm_cmd) && arm_cmd.response.success)
-        {
-            ROS_INFO("Vehicle armed");
-        }
-        last_request = ros::Time::now();
-    }
-    else
-    {
-        if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0)))
-        {
-            if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
-            {
-                ROS_INFO("Offboard enabled");
-                ROS_INFO("Mode: %s", current_state.mode.c_str());
-            }
-            last_request = ros::Time::now();
-        }
-    }
-
-    //takeoff
-    ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/takeoff");
-    mavros_msgs::CommandBool srv_takeoff;
-    srv_takeoff.request.altitude = 1.0; //高度1米
-    if(takeoff_cl.call(srv_takeoff))
-        ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
-
     //主循环
     while(ros::ok())
     {
+        if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
+        {
+            if( arming_client.call(arm_cmd) && arm_cmd.response.success)
+            {
+                ROS_INFO("Vehicle armed");
+            }
+            last_request = ros::Time::now();
+        }
+        else
+        {
+            if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0)))
+            {
+                if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
+                {
+                    ROS_INFO("Offboard enabled");
+                    ROS_INFO("Mode: %s", current_state.mode.c_str());
+                }
+                last_request = ros::Time::now();
+            }
+        }
+
+        //takeoff
+        ros::ServiceClient takeoff_cl = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/takeoff");
+        mavros_msgs::CommandBool srv_takeoff;
+        srv_takeoff.request.altitude = 1.0; //高度1米
+        if(takeoff_cl.call(srv_takeoff))
+            ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
+
         int flag=1;
         switch(flag)
+        {
             case 1:
                 target1.fly_to_target(local_pos_pub);
                 if (ros::Time::now() - last_request > ros::Duration(5.0))
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
                     last_request = ros::Time::now();
                     flag++;
                 }
+        }
 
         //land
         ros::ServiceClient land_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/land");

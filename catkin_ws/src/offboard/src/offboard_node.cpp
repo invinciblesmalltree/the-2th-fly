@@ -1,65 +1,62 @@
-#include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <ros/ros.h>
+
+class move_to_target {
+  public:
+    float x, y, z;
+    bool reach = false;
+
+    move_to_target(float x, float y, float z) {
+        this->x = x;
+        this->y = y;
+        this->z = z;
+    }
+
+    void fly_to_target(ros::Publisher &local_pos_pub) {
+        geometry_msgs::PoseStamped pose;
+        pose.pose.position.x = x;
+        pose.pose.position.y = y;
+        pose.pose.position.z = z;
+
+        local_pos_pub.publish(pose);
+    }
+};
 
 mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr& msg)
-{
-    current_state = *msg;
-}
+void state_cb(const mavros_msgs::State::ConstPtr &msg);
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     ros::init(argc, argv, "offb_node");
     ros::NodeHandle nh;
 
-    bool reached_first_point = false;
-    bool reached_second_point = false;
-    bool reached_third_point = false;
-    geometry_msgs::PoseStamped pose1, pose2, pose3;
-
-    //点1
-    pose1.pose.position.x = 0.0;
-    pose1.pose.position.y = 0.0;
-    pose1.pose.position.z = 1.0;
-    //点2
-    pose2.pose.position.x = 2.0;
-    pose2.pose.position.y = 0.0;
-    pose2.pose.position.z = 1.0;
-    //点3
-    pose2.pose.position.x = 2.0;
-    pose2.pose.position.y = 0.0;
-    pose2.pose.position.z = 0.05;
-
-    //状态订阅器
-    ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
-            ("mavros/state", 10, state_cb);
-    //目标位置发布器
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
-            ("mavros/setpoint_position/local", 10);
-    //定义起飞服务客户端（起飞，降落）
-    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
-            ("mavros/cmd/arming");
-    //定义设置模式服务客户端
-    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
-            ("mavros/set_mode");
-
-    //发布频率
+    ros::Subscriber state_sub =
+        nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
+    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
+        "mavros/setpoint_position/local", 10);
+    ros::ServiceClient arming_client =
+        nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
+    ros::ServiceClient set_mode_client =
+        nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    //等待FCU连接
-    while(ros::ok() && !current_state.connected)
-    {
+    move_to_target target0(0, 0, 1.0);
+    move_to_target target1(2.82, 0.0, 1.0);
+    move_to_target target2(3.55, -0.43, 1.0);
+    move_to_target target3(3.225, -1.165, 1.0);
+    move_to_target target4(3.225, -1.48, 1.0);
+    move_to_target target5(2.82, -2.00, 1.0);
+    move_to_target target6(0, -2.00, 1.0);
+
+    while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
         rate.sleep();
     }
 
-    //起飞前预发布pose1
-    for(int i = 100; ros::ok() && i > 0; --i)
-    {
-        local_pos_pub.publish(pose1);
+    for (int i = 100; ros::ok() && i > 0; --i) {
+        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -72,23 +69,19 @@ int main(int argc, char **argv)
 
     ros::Time last_request = ros::Time::now();
 
-    while(ros::ok())
-    {
- 
-        if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0)))
-        {
-            if( arming_client.call(arm_cmd) && arm_cmd.response.success)
-            {
+    while (ros::ok()) {
+
+        if (!current_state.armed &&
+            (ros::Time::now() - last_request > ros::Duration(5.0))) {
+            if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
                 ROS_INFO("Vehicle armed");
             }
             last_request = ros::Time::now();
-        }
-        else
-        {
-            if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0)))
-            {
-                if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
-                {
+        } else {
+            if (current_state.mode != "OFFBOARD" &&
+                (ros::Time::now() - last_request > ros::Duration(5.0))) {
+                if (set_mode_client.call(offb_set_mode) &&
+                    offb_set_mode.response.mode_sent) {
                     ROS_INFO("Offboard enabled");
                     ROS_INFO("Mode: %s", current_state.mode.c_str());
                 }
@@ -96,42 +89,57 @@ int main(int argc, char **argv)
             }
         }
 
-        //到达第点1，发布点2
-        if(reached_first_point && !reached_second_point)
-        {
-            local_pos_pub.publish(pose2);
-        }
-        else
-        {
-            if (ros::Time::now() - last_request > ros::Duration(10.0))
-            {
-                reached_first_point = true;
+        if (!target0.reach) {
+            target0.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
+                target0.reach = true;
+                ROS_INFO("Reached zero point");
+                last_request = ros::Time::now();
+            }
+        } else if (!target1.reach) {
+            target1.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(10.0)) {
+                target1.reach = true;
                 ROS_INFO("Reached first point");
                 last_request = ros::Time::now();
             }
-        }
-
-        //到达点2，发布点3
-        if(reached_second_point)
-        {
-            local_pos_pub.publish(pose3);
-        }
-        else
-        {
-            if (ros::Time::now() - last_request > ros::Duration(10.0))
-            {
-                reached_second_point = true;
+        } else if (!target2.reach) {
+            target2.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
+                target2.reach = true;
                 ROS_INFO("Reached second point");
                 last_request = ros::Time::now();
             }
-        }
-
-        //到达点3，停止
-        if (reached_second_point && ros::Time::now() - last_request > ros::Duration(10.0))
-        {
-            reached_third_point = true;
-            ROS_INFO("Reached third point, turn off");
-            last_request = ros::Time::now();
+        } else if (!target3.reach) {
+            target3.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
+                target3.reach = true;
+                ROS_INFO("Reached third point");
+                last_request = ros::Time::now();
+            }
+        } else if (!target4.reach) {
+            target4.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
+                target4.reach = true;
+                ROS_INFO("Reached fourth point");
+                last_request = ros::Time::now();
+            }
+        } else if (!target5.reach) {
+            target5.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
+                target5.reach = true;
+                ROS_INFO("Reached fifth point");
+                last_request = ros::Time::now();
+            }
+        } else if (!target6.reach) {
+            target6.fly_to_target(local_pos_pub);
+            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
+                target6.reach = true;
+                ROS_INFO("Reached sixth point");
+                last_request = ros::Time::now();
+            }
+        } else if (target6.reach) {
+            ROS_INFO("Mission completed");
             break;
         }
 
@@ -140,3 +148,5 @@ int main(int argc, char **argv)
     }
     return 0;
 }
+
+void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }

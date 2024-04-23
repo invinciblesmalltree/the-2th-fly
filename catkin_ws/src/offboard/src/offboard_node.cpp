@@ -6,12 +6,12 @@
 #include <ros/ros.h>
 #include <vector>
 
-class Target {
+class target {
   public:
     float x, y, z;
     bool reached = false;
 
-    Target(float x, float y, float z) {
+    target(float x, float y, float z) {
         this->x = x;
         this->y = y;
         this->z = z;
@@ -52,11 +52,12 @@ int main(int argc, char **argv) {
         nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    std::vector<Target> targets = {
-        Target(0, 0, 1.0),         Target(2.82, 0.0, 1.0),
-        Target(3.55, -0.43, 1.0),  Target(3.225, -1.165, 1.0),
-        Target(3.225, -1.48, 1.0), Target(2.82, -2.00, 1.0),
-        Target(0, -2.00, 1.0)};
+    std::vector<target> targets = {
+        target(0, 0, 1.0),          target(1.41, 0.0, 1.0),
+        target(2.82, 0.0, 1.0),     target(3.55, -0.43, 1.0),
+        target(3.225, -1.165, 1.0), target(3.225, -1.48, 1.0),
+        target(2.82, -2.00, 1.0),   target(1.41, -2.00, 1.0),
+        target(0, -2.00, 1.0)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
@@ -72,6 +73,7 @@ int main(int argc, char **argv) {
     ros::Time last_request = ros::Time::now();
 
     size_t target_index = 0;
+    bool ready_to_fly = false;
 
     while (ros::ok()) {
         if (!current_state.armed &&
@@ -87,29 +89,38 @@ int main(int argc, char **argv) {
                     offb_set_mode.response.mode_sent) {
                     ROS_INFO("Offboard enabled");
                     ROS_INFO("Mode: %s", current_state.mode.c_str());
+                    ready_to_fly = true;
                 }
                 last_request = ros::Time::now();
             }
         }
 
-        if (target_index >= targets.size()) {
-            ROS_INFO("All targets reached");
-            break;
-        }
+        if (ready_to_fly)
+            if (target_index >= targets.size()) {
+                ROS_INFO("All targets reached");
+                ros::Duration(5.0).sleep();
+                break;
+            } else if (!targets[target_index].reached) {
+                targets[target_index].fly_to_target(local_pos_pub);
 
-        if (!targets[target_index].reached) {
-            targets[target_index].fly_to_target(local_pos_pub);
-
-            float distance = sqrt(
-                pow(current_pose.pose.position.x - targets[target_index].x, 2) +
-                pow(current_pose.pose.position.y - targets[target_index].y, 2) +
-                pow(current_pose.pose.position.z - targets[target_index].z, 2));
-            if (distance < 0.5) {
-                targets[target_index].reached = true;
-                ROS_INFO("Reached target %zu", target_index);
-                target_index++;
+                float distance = sqrt(
+                    pow(current_pose.pose.position.x - targets[target_index].x,
+                        2) +
+                    pow(current_pose.pose.position.y - targets[target_index].y,
+                        2) +
+                    pow(current_pose.pose.position.z - targets[target_index].z,
+                        2));
+                if (distance < 0.1) {
+                    targets[target_index].reached = true;
+                    ROS_INFO("Reached target %zu", target_index);
+                    if (target_index == 0) {
+                        ROS_INFO(
+                            "Hovering at the first target for 1 seconds...");
+                        ros::Duration(1.0).sleep();
+                    }
+                    target_index++;
+                }
             }
-        }
 
         ros::spinOnce();
         rate.sleep();

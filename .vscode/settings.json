@@ -4,5 +4,6 @@
         ],
         "python.analysis.extraPaths": [
                 "/opt/ros/noetic/lib/python3/dist-packages"
-        ]
+        ],
+        "cmake.sourceDirectory": "/home/insmtr/ros/the-2th-fly/catkin_ws/src"
 }

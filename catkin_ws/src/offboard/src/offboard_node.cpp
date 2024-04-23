@@ -38,9 +38,7 @@ void pose_cb(const geometry_msgs::PoseStamped::ConstPtr &msg) {
     current_pose = *msg;
 }
 
-void lidar_cb(const nav_msgs::Odometry::ConstPtr &msg) {
-    lidar_pose = *msg;
-}
+void lidar_cb(const nav_msgs::Odometry::ConstPtr &msg) { lidar_pose = *msg; }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "offb_node");
@@ -121,13 +119,19 @@ int main(int argc, char **argv) {
                 //     pow(current_pose.pose.position.z -
                 //     targets[target_index].z,
                 //         2));
-                float distance = sqrt(
-                    pow(lidar_pose.pose.pose.position.x - targets[target_index].x,
-                        2) +
-                    pow(lidar_pose.pose.pose.position.y - targets[target_index].y,
-                        2) +
-                    pow(lidar_pose.pose.pose.position.z - targets[target_index].z,
-                        2));
+                float distance = sqrt(pow(lidar_pose.pose.pose.position.x -
+                                              targets[target_index].x,
+                                          2) +
+                                      pow(lidar_pose.pose.pose.position.y -
+                                              targets[target_index].y,
+                                          2) +
+                                      pow(lidar_pose.pose.pose.position.z -
+                                              targets[target_index].z,
+                                          2));
+                ROS_INFO("Location: x=%f, y=%f, z=%f",
+                         lidar_pose.pose.pose.position.x,
+                         lidar_pose.pose.pose.position.y,
+                         lidar_pose.pose.pose.position.z);
                 if (distance < 0.1) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);

@@ -1,10 +1,10 @@
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
 #include <lidar_data/LidarPose.h>
+#include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
 #include <tf/tf.h>
 
 class LidarDataNode {
-public:
+  public:
     ros::NodeHandle nh;
     ros::Publisher data_pub;
     ros::Subscriber odom_sub;
@@ -13,25 +13,22 @@ public:
         // 初始化发布者，发布 LidarPose 消息
         data_pub = nh.advertise<lidar_data::LidarPose>("lidar_data", 10);
         // 初始化订阅者，订阅 Odometry 消息
-        odom_sub = nh.subscribe("odom", 10, &LidarDataNode::odomCallback, this);
+        odom_sub =
+            nh.subscribe("/Odometry", 10, &LidarDataNode::odomCallback, this);
     }
 
-    void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    void odomCallback(const nav_msgs::Odometry::ConstPtr &msg) {
         // 从 Odometry 消息中获取位置和姿态（四元数）
-        const auto& pose = msg->pose.pose;
-        
+        const auto &pose = msg->pose.pose;
+
         // 提取位置坐标
         double x = pose.position.x;
         double y = pose.position.y;
         double z = pose.position.z;
 
         // 提取并转换四元数为欧拉角
-        tf::Quaternion q(
-            pose.orientation.x,
-            pose.orientation.y,
-            pose.orientation.z,
-            pose.orientation.w
-        );
+        tf::Quaternion q(pose.orientation.x, pose.orientation.y,
+                         pose.orientation.z, pose.orientation.w);
         tf::Matrix3x3 m(q);
         double roll, pitch, yaw;
         m.getRPY(roll, pitch, yaw);
@@ -47,13 +44,20 @@ public:
 
         // 发布消息
         data_pub.publish(output);
-        ROS_INFO("Published Lidar Data: Position=(%.2f, %.2f, %.2f), Yaw=%.2f rad", x, y, z, yaw);
+        ROS_INFO("Position=(%.2f, %.2f, %.2f), "
+                 "Orientation=(%.2f, %.2f, %.2f) rad",
+                 x, y, z, roll, pitch, yaw);
     }
 };
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "lidar_data_node");
     LidarDataNode node;
-    ros::spin();
+
+    ros::Rate rate(20); // 设置为 20 Hz
+    while (ros::ok()) {
+        ros::spin();
+        rate.sleep();
+    }
     return 0;
 }

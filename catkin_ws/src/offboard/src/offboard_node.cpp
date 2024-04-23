@@ -3,6 +3,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <vector>
 
@@ -29,11 +30,16 @@ class target {
 
 mavros_msgs::State current_state;
 geometry_msgs::PoseStamped current_pose;
+nav_msgs::Odometry lidar_pose;
 
 void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }
 
 void pose_cb(const geometry_msgs::PoseStamped::ConstPtr &msg) {
     current_pose = *msg;
+}
+
+void lidar_cb(const nav_msgs::Odometry::ConstPtr &msg) {
+    lidar_pose = *msg;
 }
 
 int main(int argc, char **argv) {
@@ -44,6 +50,8 @@ int main(int argc, char **argv) {
         nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
     ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(
         "mavros/local_position/pose", 10, pose_cb);
+    ros::Subscriber lidar_sub =
+        nh.subscribe<nav_msgs::Odometry>("/Odometry", 10, lidar_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
         "mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client =
@@ -103,12 +111,22 @@ int main(int argc, char **argv) {
             } else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);
 
+                // float distance = sqrt(
+                //     pow(current_pose.pose.position.x -
+                //     targets[target_index].x,
+                //         2) +
+                //     pow(current_pose.pose.position.y -
+                //     targets[target_index].y,
+                //         2) +
+                //     pow(current_pose.pose.position.z -
+                //     targets[target_index].z,
+                //         2));
                 float distance = sqrt(
-                    pow(current_pose.pose.position.x - targets[target_index].x,
+                    pow(lidar_pose.pose.pose.position.x - targets[target_index].x,
                         2) +
-                    pow(current_pose.pose.position.y - targets[target_index].y,
+                    pow(lidar_pose.pose.pose.position.y - targets[target_index].y,
                         2) +
-                    pow(current_pose.pose.position.z - targets[target_index].z,
+                    pow(lidar_pose.pose.pose.position.z - targets[target_index].z,
                         2));
                 if (distance < 0.1) {
                     targets[target_index].reached = true;

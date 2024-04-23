@@ -1,15 +1,17 @@
+#include <cmath>
 #include <geometry_msgs/PoseStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <ros/ros.h>
+#include <vector>
 
-class move_to_target {
+class Target {
   public:
     float x, y, z;
-    bool reach = false;
+    bool reached = false;
 
-    move_to_target(float x, float y, float z) {
+    Target(float x, float y, float z) {
         this->x = x;
         this->y = y;
         this->z = z;
@@ -26,7 +28,13 @@ class move_to_target {
 };
 
 mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr &msg);
+geometry_msgs::PoseStamped current_pose;
+
+void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }
+
+void pose_cb(const geometry_msgs::PoseStamped::ConstPtr &msg) {
+    current_pose = *msg;
+}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "offb_node");
@@ -34,6 +42,8 @@ int main(int argc, char **argv) {
 
     ros::Subscriber state_sub =
         nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
+    ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(
+        "mavros/local_position/pose", 10, pose_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
         "mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client =
@@ -42,21 +52,13 @@ int main(int argc, char **argv) {
         nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    move_to_target target0(0, 0, 1.0);
-    move_to_target target1(2.82, 0.0, 1.0);
-    move_to_target target2(3.55, -0.43, 1.0);
-    move_to_target target3(3.225, -1.165, 1.0);
-    move_to_target target4(3.225, -1.48, 1.0);
-    move_to_target target5(2.82, -2.00, 1.0);
-    move_to_target target6(0, -2.00, 1.0);
+    std::vector<Target> targets = {
+        Target(0, 0, 1.0),         Target(2.82, 0.0, 1.0),
+        Target(3.55, -0.43, 1.0),  Target(3.225, -1.165, 1.0),
+        Target(3.225, -1.48, 1.0), Target(2.82, -2.00, 1.0),
+        Target(0, -2.00, 1.0)};
 
     while (ros::ok() && !current_state.connected) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    for (int i = 100; ros::ok() && i > 0; --i) {
-        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -69,8 +71,9 @@ int main(int argc, char **argv) {
 
     ros::Time last_request = ros::Time::now();
 
-    while (ros::ok()) {
+    size_t target_index = 0;
 
+    while (ros::ok()) {
         if (!current_state.armed &&
             (ros::Time::now() - last_request > ros::Duration(5.0))) {
             if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
@@ -89,58 +92,23 @@ int main(int argc, char **argv) {
             }
         }
 
-        if (!target0.reach) {
-            target0.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
-                target0.reach = true;
-                ROS_INFO("Reached zero point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target1.reach) {
-            target1.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(10.0)) {
-                target1.reach = true;
-                ROS_INFO("Reached first point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target2.reach) {
-            target2.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target2.reach = true;
-                ROS_INFO("Reached second point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target3.reach) {
-            target3.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target3.reach = true;
-                ROS_INFO("Reached third point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target4.reach) {
-            target4.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target4.reach = true;
-                ROS_INFO("Reached fourth point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target5.reach) {
-            target5.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
-                target5.reach = true;
-                ROS_INFO("Reached fifth point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target6.reach) {
-            target6.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target6.reach = true;
-                ROS_INFO("Reached sixth point");
-                last_request = ros::Time::now();
-            }
-        } else if (target6.reach) {
-            ROS_INFO("Mission completed");
+        if (target_index >= targets.size()) {
+            ROS_INFO("All targets reached");
             break;
+        }
+
+        if (!targets[target_index].reached) {
+            targets[target_index].fly_to_target(local_pos_pub);
+
+            float distance = sqrt(
+                pow(current_pose.pose.position.x - targets[target_index].x, 2) +
+                pow(current_pose.pose.position.y - targets[target_index].y, 2) +
+                pow(current_pose.pose.position.z - targets[target_index].z, 2));
+            if (distance < 0.5) {
+                targets[target_index].reached = true;
+                ROS_INFO("Reached target %zu", target_index);
+                target_index++;
+            }
         }
 
         ros::spinOnce();
@@ -148,5 +116,3 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
-
-void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }

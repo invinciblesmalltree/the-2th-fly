@@ -128,10 +128,10 @@ int main(int argc, char **argv) {
                                       pow(lidar_pose.pose.pose.position.z -
                                               targets[target_index].z,
                                           2));
-                ROS_INFO("Location: x=%f, y=%f, z=%f",
-                         lidar_pose.pose.pose.position.x,
-                         lidar_pose.pose.pose.position.y,
-                         lidar_pose.pose.pose.position.z);
+                // ROS_INFO("Location: x=%f, y=%f, z=%f",
+                //          lidar_pose.pose.pose.position.x,
+                //          lidar_pose.pose.pose.position.y,
+                //          lidar_pose.pose.pose.position.z);
                 if (distance < 0.1) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);

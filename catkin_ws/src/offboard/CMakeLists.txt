@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   nav_msgs
   tf2
+  lidar_data
 )
 
 ## System dependencies are found with CMake's conventions
@@ -152,8 +153,8 @@ add_executable(offboard_node src/offboard_node.cpp)
 
 ##Specify libraries to link a library or executable target against
 target_link_libraries(offboard_node
-   ${catkin_LIBRARIES}
- )
+    ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

@@ -1,9 +1,10 @@
 #include <cmath>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <lidar_data/LidarPose.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <vector>
 
@@ -29,16 +30,14 @@ class target {
 };
 
 mavros_msgs::State current_state;
-geometry_msgs::PoseStamped current_pose;
-nav_msgs::Odometry lidar_pose;
+lidar_data::LidarPose lidar_data_pose;
+geometry_msgs::TwistStamped vel_msg;
 
 void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }
 
-void pose_cb(const geometry_msgs::PoseStamped::ConstPtr &msg) {
-    current_pose = *msg;
+void lidar_cb(const lidar_data::LidarPose::ConstPtr &msg) {
+    lidar_data_pose = *msg;
 }
-
-void lidar_cb(const nav_msgs::Odometry::ConstPtr &msg) { lidar_pose = *msg; }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "offb_node");
@@ -46,12 +45,12 @@ int main(int argc, char **argv) {
 
     ros::Subscriber state_sub =
         nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-    ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(
-        "mavros/local_position/pose", 10, pose_cb);
-    ros::Subscriber lidar_sub =
-        nh.subscribe<nav_msgs::Odometry>("/Odometry", 10, lidar_cb);
+    ros::Subscriber lidar_data_sub =
+        nh.subscribe<lidar_data::LidarPose>("lidar_data", 10, lidar_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
         "mavros/setpoint_position/local", 10);
+    ros::Publisher velocity_pub = nh.advertise<geometry_msgs::TwistStamped>(
+        "mavros/setpoint_velocity/cmd_vel", 10);
     ros::ServiceClient arming_client =
         nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client =
@@ -63,7 +62,7 @@ int main(int argc, char **argv) {
         target(2.82, 0.0, 1.0),     target(3.55, -0.43, 1.0),
         target(3.225, -1.165, 1.0), target(3.225, -1.48, 1.0),
         target(2.82, -2.00, 1.0),   target(1.41, -2.00, 1.0),
-        target(0, -2.00, 1.0)};
+        target(0, -2.00, 1.0),      target(0, -2.00, 0.2)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
@@ -80,6 +79,8 @@ int main(int argc, char **argv) {
 
     size_t target_index = 0;
     bool ready_to_fly = false;
+
+    // vel_msg.twist.linear.y = 1.0;
 
     while (ros::ok()) {
         if (!current_state.armed &&
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
             }
         }
 
-        if (ready_to_fly)
+        if (ready_to_fly) {
             if (target_index >= targets.size()) {
                 ROS_INFO("All targets reached");
                 ros::Duration(5.0).sleep();
@@ -109,40 +110,36 @@ int main(int argc, char **argv) {
             } else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);
 
-                // float distance = sqrt(
-                //     pow(current_pose.pose.position.x -
-                //     targets[target_index].x,
-                //         2) +
-                //     pow(current_pose.pose.position.y -
-                //     targets[target_index].y,
-                //         2) +
-                //     pow(current_pose.pose.position.z -
-                //     targets[target_index].z,
-                //         2));
-                float distance = sqrt(pow(lidar_pose.pose.pose.position.x -
-                                              targets[target_index].x,
-                                          2) +
-                                      pow(lidar_pose.pose.pose.position.y -
-                                              targets[target_index].y,
-                                          2) +
-                                      pow(lidar_pose.pose.pose.position.z -
-                                              targets[target_index].z,
-                                          2));
-                // ROS_INFO("Location: x=%f, y=%f, z=%f",
-                //          lidar_pose.pose.pose.position.x,
-                //          lidar_pose.pose.pose.position.y,
-                //          lidar_pose.pose.pose.position.z);
+                float distance =
+                    sqrt(pow(lidar_data_pose.x - targets[target_index].x, 2) +
+                         pow(lidar_data_pose.y - targets[target_index].y, 2) +
+                         pow(lidar_data_pose.z - targets[target_index].z, 2));
                 if (distance < 0.1) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);
-                    if (target_index == 0) {
-                        ROS_INFO(
-                            "Hovering at the first target for 1 seconds...");
-                        ros::Duration(1.0).sleep();
-                    }
                     target_index++;
                 }
             }
+
+            // if (!targets[0].reached) {
+            //     targets[0].fly_to_target(local_pos_pub);
+            //     float distance =
+            //         sqrt(pow(current_pose.pose.position.x - targets[0].x, 2)
+            //         +
+            //              pow(current_pose.pose.position.y - targets[0].y, 2)
+            //              + pow(current_pose.pose.position.z - targets[0].z,
+            //              2));
+            //     if (distance < 0.1)
+            //         targets[0].reached = true;
+            // } else {
+            //     float angle_to_target =
+            //         atan2(30 - current_pose.pose.position.x,
+            //               30 - current_pose.pose.position.y);
+            //     vel_msg.twist.angular.z = angle_to_target;
+
+            //     velocity_pub.publish(vel_msg);
+            // }
+        }
 
         ros::spinOnce();
         rate.sleep();

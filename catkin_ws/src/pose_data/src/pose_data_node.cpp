@@ -11,7 +11,7 @@ class PoseDataNode {
 
     PoseDataNode() {
         // 初始化发布者，发布 LidarPose 消息
-        pose_pub = nh.advertise<lidar_data::LidarPose>("lidar_pose", 10);
+        pose_pub = nh.advertise<lidar_data::LidarPose>("lidar_data", 10);
         ROS_INFO("LidarPose Pub");
         // 初始化订阅者，订阅 PoseStamped 消息
         ROS_INFO("LidarPose Sub");

@@ -29,14 +29,19 @@ class target {
     }
 };
 
+float vector2theta(float x, float y) {
+    float angle = atan2(y, x);
+    return angle < 0 ? angle += 2 * M_PI : angle;
+}
+
 mavros_msgs::State current_state;
-lidar_data::LidarPose lidar_data_pose;
+lidar_data::LidarPose lidar_pose_data;
 geometry_msgs::TwistStamped vel_msg;
 
 void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }
 
 void lidar_cb(const lidar_data::LidarPose::ConstPtr &msg) {
-    lidar_data_pose = *msg;
+    lidar_pose_data = *msg;
 }
 
 int main(int argc, char **argv) {
@@ -80,7 +85,7 @@ int main(int argc, char **argv) {
     size_t target_index = 0;
     bool ready_to_fly = false;
 
-    // vel_msg.twist.linear.y = 1.0;
+    vel_msg.twist.linear.y = 0.3;
 
     while (ros::ok()) {
         if (!current_state.armed &&
@@ -105,15 +110,15 @@ int main(int argc, char **argv) {
         if (ready_to_fly) {
             if (target_index >= targets.size()) {
                 ROS_INFO("All targets reached");
-                ros::Duration(5.0).sleep();
+                ros::shutdown();
                 break;
             } else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);
 
                 float distance =
-                    sqrt(pow(lidar_data_pose.x - targets[target_index].x, 2) +
-                         pow(lidar_data_pose.y - targets[target_index].y, 2) +
-                         pow(lidar_data_pose.z - targets[target_index].z, 2));
+                    sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
+                         pow(lidar_pose_data.y - targets[target_index].y, 2) +
+                         pow(lidar_pose_data.z - targets[target_index].z, 2));
                 if (distance < 0.1) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);
@@ -123,19 +128,24 @@ int main(int argc, char **argv) {
 
             // if (!targets[0].reached) {
             //     targets[0].fly_to_target(local_pos_pub);
-            //     float distance =
-            //         sqrt(pow(current_pose.pose.position.x - targets[0].x, 2)
-            //         +
-            //              pow(current_pose.pose.position.y - targets[0].y, 2)
-            //              + pow(current_pose.pose.position.z - targets[0].z,
-            //              2));
+            //     float distance = sqrt(pow(lidar_pose_data.x - targets[0].x,
+            //     2) +
+            //                           pow(lidar_pose_data.y - targets[0].y,
+            //                           2) + pow(lidar_pose_data.z -
+            //                           targets[0].z, 2));
             //     if (distance < 0.1)
             //         targets[0].reached = true;
             // } else {
             //     float angle_to_target =
-            //         atan2(30 - current_pose.pose.position.x,
-            //               30 - current_pose.pose.position.y);
-            //     vel_msg.twist.angular.z = angle_to_target;
+            //         vector2theta(-3 - lidar_pose_data.x, 3 -
+            //         lidar_pose_data.y);
+            //     float angular_angle = angle_to_target - lidar_pose_data.yaw;
+            //     if (angular_angle > M_PI)
+            //         angular_angle -= M_PI;
+            //     if (angular_angle < -M_PI)
+            //         angular_angle += M_PI;
+            //     ROS_INFO("%f %f", angle_to_target, lidar_pose_data.yaw);
+            //     vel_msg.twist.angular.z = angular_angle;
 
             //     velocity_pub.publish(vel_msg);
             // }

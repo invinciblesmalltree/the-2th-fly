@@ -34,6 +34,12 @@ class PoseDataNode {
         tf::Matrix3x3 m(q);
         double roll, pitch, yaw;
         m.getRPY(roll, pitch, yaw);
+        if (roll < 0)
+            roll += 2 * M_PI;
+        if (pitch < 0)
+            pitch += 2 * M_PI;
+        if (yaw < 0)
+            yaw += 2 * M_PI;
 
         // 创建并填充 LidarPose 消息
         lidar_data::LidarPose output;

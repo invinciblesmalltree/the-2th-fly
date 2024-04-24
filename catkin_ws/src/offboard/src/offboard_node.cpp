@@ -1,15 +1,19 @@
+#include <cmath>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <lidar_data/LidarPose.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <ros/ros.h>
+#include <vector>
 
-class move_to_target {
+class target {
   public:
     float x, y, z;
-    bool reach = false;
+    bool reached = false;
 
-    move_to_target(float x, float y, float z) {
+    target(float x, float y, float z) {
         this->x = x;
         this->y = y;
         this->z = z;
@@ -25,8 +29,20 @@ class move_to_target {
     }
 };
 
+float vector2theta(float x, float y) {
+    float angle = atan2(y, x);
+    return angle < 0 ? angle += 2 * M_PI : angle;
+}
+
 mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr &msg);
+lidar_data::LidarPose lidar_pose_data;
+geometry_msgs::TwistStamped vel_msg;
+
+void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }
+
+void lidar_cb(const lidar_data::LidarPose::ConstPtr &msg) {
+    lidar_pose_data = *msg;
+}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "offb_node");
@@ -34,29 +50,26 @@ int main(int argc, char **argv) {
 
     ros::Subscriber state_sub =
         nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
+    ros::Subscriber lidar_data_sub =
+        nh.subscribe<lidar_data::LidarPose>("lidar_data", 10, lidar_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
         "mavros/setpoint_position/local", 10);
+    ros::Publisher velocity_pub = nh.advertise<geometry_msgs::TwistStamped>(
+        "mavros/setpoint_velocity/cmd_vel", 10);
     ros::ServiceClient arming_client =
         nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client =
         nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    move_to_target target0(0, 0, 1.0);
-    move_to_target target1(2.82, 0.0, 1.0);
-    move_to_target target2(3.55, -0.43, 1.0);
-    move_to_target target3(3.225, -1.165, 1.0);
-    move_to_target target4(3.225, -1.48, 1.0);
-    move_to_target target5(2.82, -2.00, 1.0);
-    move_to_target target6(0, -2.00, 1.0);
+    std::vector<target> targets = {
+        target(0, 0, 1.0),          target(1.41, 0.0, 1.0),
+        target(2.82, 0.0, 1.0),     target(3.55, -0.43, 1.0),
+        target(3.225, -1.165, 1.0), target(3.225, -1.48, 1.0),
+        target(2.82, -2.00, 1.0),   target(1.41, -2.00, 1.0),
+        target(0, -2.00, 1.0),      target(0, -2.00, 0.2)};
 
     while (ros::ok() && !current_state.connected) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    for (int i = 100; ros::ok() && i > 0; --i) {
-        target1.fly_to_target(local_pos_pub);
         ros::spinOnce();
         rate.sleep();
     }
@@ -69,8 +82,12 @@ int main(int argc, char **argv) {
 
     ros::Time last_request = ros::Time::now();
 
-    while (ros::ok()) {
+    size_t target_index = 0;
+    bool ready_to_fly = false;
 
+    vel_msg.twist.linear.y = 0.3;
+
+    while (ros::ok()) {
         if (!current_state.armed &&
             (ros::Time::now() - last_request > ros::Duration(5.0))) {
             if (arming_client.call(arm_cmd) && arm_cmd.response.success) {
@@ -84,63 +101,54 @@ int main(int argc, char **argv) {
                     offb_set_mode.response.mode_sent) {
                     ROS_INFO("Offboard enabled");
                     ROS_INFO("Mode: %s", current_state.mode.c_str());
+                    ready_to_fly = true;
                 }
                 last_request = ros::Time::now();
             }
         }
 
-        if (!target0.reach) {
-            target0.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
-                target0.reach = true;
-                ROS_INFO("Reached zero point");
-                last_request = ros::Time::now();
+        if (ready_to_fly) {
+            if (target_index >= targets.size()) {
+                ROS_INFO("All targets reached");
+                ros::shutdown();
+                break;
+            } else if (!targets[target_index].reached) {
+                targets[target_index].fly_to_target(local_pos_pub);
+
+                float distance =
+                    sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
+                         pow(lidar_pose_data.y - targets[target_index].y, 2) +
+                         pow(lidar_pose_data.z - targets[target_index].z, 2));
+                if (distance < 0.1) {
+                    targets[target_index].reached = true;
+                    ROS_INFO("Reached target %zu", target_index);
+                    target_index++;
+                }
             }
-        } else if (!target1.reach) {
-            target1.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(10.0)) {
-                target1.reach = true;
-                ROS_INFO("Reached first point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target2.reach) {
-            target2.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target2.reach = true;
-                ROS_INFO("Reached second point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target3.reach) {
-            target3.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target3.reach = true;
-                ROS_INFO("Reached third point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target4.reach) {
-            target4.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target4.reach = true;
-                ROS_INFO("Reached fourth point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target5.reach) {
-            target5.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
-                target5.reach = true;
-                ROS_INFO("Reached fifth point");
-                last_request = ros::Time::now();
-            }
-        } else if (!target6.reach) {
-            target6.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(3.0)) {
-                target6.reach = true;
-                ROS_INFO("Reached sixth point");
-                last_request = ros::Time::now();
-            }
-        } else if (target6.reach) {
-            ROS_INFO("Mission completed");
-            break;
+
+            // if (!targets[0].reached) {
+            //     targets[0].fly_to_target(local_pos_pub);
+            //     float distance = sqrt(pow(lidar_pose_data.x - targets[0].x,
+            //     2) +
+            //                           pow(lidar_pose_data.y - targets[0].y,
+            //                           2) + pow(lidar_pose_data.z -
+            //                           targets[0].z, 2));
+            //     if (distance < 0.1)
+            //         targets[0].reached = true;
+            // } else {
+            //     float angle_to_target =
+            //         vector2theta(-3 - lidar_pose_data.x, 3 -
+            //         lidar_pose_data.y);
+            //     float angular_angle = angle_to_target - lidar_pose_data.yaw;
+            //     if (angular_angle > M_PI)
+            //         angular_angle -= 2 * M_PI;
+            //     if (angular_angle < -M_PI)
+            //         angular_angle += 2 * M_PI;
+            //     ROS_INFO("%f %f", angle_to_target, lidar_pose_data.yaw);
+            //     vel_msg.twist.angular.z = angular_angle;
+
+            //     velocity_pub.publish(vel_msg);
+            // }
         }
 
         ros::spinOnce();
@@ -148,5 +156,3 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
-
-void state_cb(const mavros_msgs::State::ConstPtr &msg) { current_state = *msg; }

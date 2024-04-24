@@ -59,11 +59,6 @@ class LidarDataNode {
 int main(int argc, char **argv) {
     ros::init(argc, argv, "lidar_data_node");
     LidarDataNode node;
-
-    ros::Rate rate(20); // 设置为 20 Hz
-    while (ros::ok()) {
-        ros::spin();
-        rate.sleep();
-    }
+    ros::spin();
     return 0;
 }

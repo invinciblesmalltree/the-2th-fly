@@ -123,6 +123,12 @@ int main(int argc, char **argv) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);
                     target_index++;
+                    if (target_index == 3)
+                        vel_msg.twist.angular.z = -M_PI / 2,
+                        velocity_pub.publish(vel_msg);
+                    else if (target_index == 5)
+                        vel_msg.twist.angular.z = -M_PI / 2,
+                        velocity_pub.publish(vel_msg);
                 }
             }
 

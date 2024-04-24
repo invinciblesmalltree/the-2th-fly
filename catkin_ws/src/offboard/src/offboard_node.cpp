@@ -141,9 +141,9 @@ int main(int argc, char **argv) {
             //         lidar_pose_data.y);
             //     float angular_angle = angle_to_target - lidar_pose_data.yaw;
             //     if (angular_angle > M_PI)
-            //         angular_angle -= M_PI;
+            //         angular_angle -= 2 * M_PI;
             //     if (angular_angle < -M_PI)
-            //         angular_angle += M_PI;
+            //         angular_angle += 2 * M_PI;
             //     ROS_INFO("%f %f", angle_to_target, lidar_pose_data.yaw);
             //     vel_msg.twist.angular.z = angular_angle;
 

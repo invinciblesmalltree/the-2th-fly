@@ -137,14 +137,13 @@ int main(int argc, char **argv) {
             //         targets[0].reached = true;
             // } else {
             //     float angle_to_target =
-            //         vector2theta(-3 - lidar_pose_data.x, 3 -
+            //         vector2theta(3 - lidar_pose_data.x, 4 -
             //         lidar_pose_data.y);
             //     float angular_angle = angle_to_target - lidar_pose_data.yaw;
             //     if (angular_angle > M_PI)
             //         angular_angle -= 2 * M_PI;
             //     if (angular_angle < -M_PI)
             //         angular_angle += 2 * M_PI;
-            //     ROS_INFO("%f %f", angle_to_target, lidar_pose_data.yaw);
             //     vel_msg.twist.angular.z = angular_angle;
 
             //     velocity_pub.publish(vel_msg);

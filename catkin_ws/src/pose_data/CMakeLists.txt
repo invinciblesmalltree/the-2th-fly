@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(offboard)
+project(pose_data)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,13 +8,10 @@ project(offboard)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  mavros
-  roscpp
-  rospy
-  nav_msgs
-  tf2
-  lidar_data
+    roscpp
+    geometry_msgs
+    tf
+    lidar_data
 )
 
 ## System dependencies are found with CMake's conventions
@@ -74,7 +71,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ################################################
@@ -108,9 +105,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES offboard
-#  CATKIN_DEPENDS geometry_msgs mavros roscpp
+#  LIBRARIES pose_data
+#  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
+    CATKIN_DEPENDS roscpp geometry_msgs tf lidar_data
 )
 
 ###########
@@ -121,12 +119,12 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-  ${catkin_INCLUDE_DIRS}
+${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/offboard.cpp
+#   src/${PROJECT_NAME}/pose_data.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -137,9 +135,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(offboard_node src/offboard_node.cpp)
-
-
+# add_executable(${PROJECT_NAME}_node src/pose_data_node.cpp)
+add_executable(pose_data_node src/pose_data_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -151,10 +148,11 @@ add_executable(offboard_node src/offboard_node.cpp)
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-##Specify libraries to link a library or executable target against
-target_link_libraries(offboard_node
-    ${catkin_LIBRARIES}
-)
+## Specify libraries to link a library or executable target against
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(pose_data_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -203,7 +201,7 @@ target_link_libraries(offboard_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_offboard.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_pose_data.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

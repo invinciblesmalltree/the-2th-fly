@@ -29,8 +29,8 @@ def detect_blue_objects(image):
         if area > 1000:
             # 找到图形轮廓中心坐标
             M = cv2.moments(contour)
-            delta_x = int(M['m10'] / M['m00'])-width/2
-            delta_y = int(M['m01'] / M['m00'])-height/2
+            delta_x = int(M['m10'] / M['m00']-width/2)
+            delta_y = -int(M['m01'] / M['m00']-height/2)
             return delta_x, delta_y
 
     return None

@@ -110,10 +110,13 @@ int main(int argc, char **argv) {
         if (ready_to_fly) {
             if (target_index >= targets.size()) {
                 ROS_INFO("All targets reached");
+                mavros_msgs::SetMode land_set_mode;
+                land_set_mode.request.custom_mode = "AUTO.LAND";
+                set_mode_client.call(land_set_mode);
+                ROS_INFO("Landing");
                 arm_cmd.request.value = false;
                 arming_client.call(arm_cmd);
-                ROS_INFO("Vehicle umarmed");
-                ros::shutdown();
+                ROS_INFO("Vehicle disarmed");
                 break;
             } else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);

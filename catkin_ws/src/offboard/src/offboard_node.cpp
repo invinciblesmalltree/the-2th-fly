@@ -110,11 +110,14 @@ int main(int argc, char **argv) {
         if (ready_to_fly) {
             if (target_index >= targets.size()) {
                 ROS_INFO("All targets reached");
+                arm_cmd.request.value = false;
+
                 ros::shutdown();
                 break;
             } else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);
-
+                arming_client.call(arm_cmd);
+                ROS_INFO("Vehicle umarmed");
                 float distance =
                     sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
                          pow(lidar_pose_data.y - targets[target_index].y, 2) +

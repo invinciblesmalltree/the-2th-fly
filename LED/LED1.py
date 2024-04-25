@@ -1,4 +1,4 @@
-import jetson.gpio as GPIO  
+import Jetson.GPIO as GPIO  
 import time  
   
 # 设置GPIO模式为board  
@@ -22,7 +22,7 @@ def blink_led(times, interval):
         time.sleep(interval)  
   
 # 调用函数使LED灯闪烁,闪烁n次，间隔1秒  
-blink_led(n,1)  
+blink_led(6,1)  
   
 # 清理GPIO设置  
 GPIO.cleanup()

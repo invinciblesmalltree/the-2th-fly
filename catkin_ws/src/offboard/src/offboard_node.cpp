@@ -67,23 +67,24 @@ int main(int argc, char **argv) {
         nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    std::vector<target> targets = {target(0, 0, 1.0, 0.0),
-                                   target(0.71, 0.0, 1.0, 0.0),
-                                   target(1.41, 0.0, 1.0, 0.0),
-                                   target(2.12, 0.0, 1.0, 0.0),
-                                   target(2.82, 0.0, 1.0, 0.0),
-                                   target(3.185, -0.215, 1.0, -M_PI / 6),
-                                   target(3.55, -0.43, 1.0, -M_PI / 3),
-                                   target(3.388, -0.798, 1.0, -2 * M_PI / 3),
-                                   target(3.225, -1.165, 1.0, -2 * M_PI / 3),
-                                   target(3.225, -1.48, 1.0, -7 * M_PI / 12),
-                                   target(3.023, -1.74, 1.0, -2 * M_PI / 3),
-                                   target(2.82, -2.00, 1.0, -2 * M_PI / 3),
-                                   target(2.12, -2.00, 1.0, -M_PI),
-                                   target(1.41, -2.00, 1.0, -M_PI),
-                                   target(0.71, -2.00, 1.0, -M_PI),
-                                   target(0, -2.00, 1.0, -M_PI),
-                                   target(0, -2.00, 0.2, -M_PI)};
+    std::vector<target> targets = {
+        target(0, 0, 1.0, 0.0),
+        target(0.71, 0.0, 1.0, 0.0),
+        target(1.41, 0.0, 1.0, 0.0),
+        target(2.12, 0.0, 1.0, 0.0),
+        target(2.82, 0.0, 1.0, 0.0),
+        target(3.185, -0.215, 1.0, -M_PI / 6),
+        target(3.35, -0.43, 1.0, -M_PI / 3), // x少了0.2
+        target(3.388, -0.798, 1.0, -2 * M_PI / 3),
+        target(3.225, -1.165, 1.0, -2 * M_PI / 3),
+        target(3.225, -1.48, 1.0, -7 * M_PI / 12),
+        target(3.023, -1.74, 1.0, -2 * M_PI / 3),
+        target(2.62, -1.80, 1.0, -5 * M_PI / 6), // x少了0.2，y多了0.2
+        target(2.12, -2.00, 1.0, -M_PI),
+        target(1.41, -2.00, 1.0, -M_PI),
+        target(0.71, -2.00, 1.0, -M_PI),
+        target(0, -2.00, 1.0, -M_PI),
+        target(0, -2.00, 0.2, -M_PI)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
@@ -100,7 +101,8 @@ int main(int argc, char **argv) {
 
     size_t target_index = 0;
 
-    vel_msg.twist.linear.y = 0.3;
+    // vel_msg.twist.linear.y = 0.1;
+    float pole_x = 0.5, pole_y = 0.0, pole_z = 1.0;
 
     while (ros::ok) {
         if (!current_state.armed &&
@@ -126,51 +128,57 @@ int main(int argc, char **argv) {
     }
 
     while (ros::ok()) {
-        if (target_index >= targets.size()) {
-            ROS_INFO("All targets reached");
-            mavros_msgs::SetMode land_set_mode;
-            land_set_mode.request.custom_mode = "AUTO.LAND";
-            set_mode_client.call(land_set_mode);
-            ROS_INFO("Landing");
-            arm_cmd.request.value = false;
-            arming_client.call(arm_cmd);
-            ROS_INFO("Vehicle disarmed");
-            break;
-        } else if (!targets[target_index].reached) {
-            targets[target_index].fly_to_target(local_pos_pub);
-            float distance =
-                sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
-                     pow(lidar_pose_data.y - targets[target_index].y, 2) +
-                     pow(lidar_pose_data.z - targets[target_index].z, 2));
-            if (distance < 0.1) {
-                targets[target_index].reached = true;
-                ROS_INFO("Reached target %zu", target_index);
-                target_index++;
-            }
-        }
-
-        // if (!targets[0].reached) {
-        //     targets[0].fly_to_target(local_pos_pub);
-        //     float distance = sqrt(pow(lidar_pose_data.x - targets[0].x,
-        //     2) +
-        //                           pow(lidar_pose_data.y - targets[0].y,
-        //                           2) + pow(lidar_pose_data.z -
-        //                           targets[0].z, 2));
-        //     if (distance < 0.1)
-        //         targets[0].reached = true;
-        // } else {
-        //     float angle_to_target =
-        //         vector2theta(3 - lidar_pose_data.x, 4 -
-        //         lidar_pose_data.y);
-        //     float angular_angle = angle_to_target - lidar_pose_data.yaw;
-        //     if (angular_angle > M_PI)
-        //         angular_angle -= 2 * M_PI;
-        //     if (angular_angle < -M_PI)
-        //         angular_angle += 2 * M_PI;
-        //     vel_msg.twist.angular.z = angular_angle;
-
-        //     velocity_pub.publish(vel_msg);
+        // if (target_index >= targets.size()) {
+        //     ROS_INFO("All targets reached");
+        //     mavros_msgs::SetMode land_set_mode;
+        //     land_set_mode.request.custom_mode = "AUTO.LAND";
+        //     set_mode_client.call(land_set_mode);
+        //     ROS_INFO("Landing");
+        //     arm_cmd.request.value = false;
+        //     arming_client.call(arm_cmd);
+        //     ROS_INFO("Vehicle disarmed");
+        //     break;
+        // } else if (!targets[target_index].reached) {
+        //     targets[target_index].fly_to_target(local_pos_pub);
+        //     float distance =
+        //         sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
+        //              pow(lidar_pose_data.y - targets[target_index].y, 2) +
+        //              pow(lidar_pose_data.z - targets[target_index].z, 2));
+        //     if (distance < 0.1) {
+        //         targets[target_index].reached = true;
+        //         ROS_INFO("Reached target %zu", target_index);
+        //         target_index++;
+        //     }
         // }
+
+        if (!targets[0].reached) {
+            targets[0].fly_to_target(local_pos_pub);
+            float distance = sqrt(pow(lidar_pose_data.x - targets[0].x, 2) +
+                                  pow(lidar_pose_data.y - targets[0].y, 2));
+            if (distance < 0.05)
+                targets[0].reached = true;
+        } else {
+            float angle_to_target = vector2theta(pole_x - lidar_pose_data.x,
+                                                 pole_y - lidar_pose_data.y);
+            float angular_angle = angle_to_target - lidar_pose_data.yaw;
+            if (angular_angle > M_PI)
+                angular_angle -= 2 * M_PI;
+            if (angular_angle < -M_PI)
+                angular_angle += 2 * M_PI;
+            vel_msg.twist.angular.z = angular_angle * 2.5;
+            float distance = sqrt(pow(lidar_pose_data.x - pole_x, 2) +
+                                  pow(lidar_pose_data.y - pole_y, 2));
+            float v_x = 0.1 * cos(lidar_pose_data.yaw + M_PI / 2),
+                  v_y = 0.1 * sin(lidar_pose_data.yaw + M_PI / 2),
+                  delta_dis = distance - 0.5;
+            v_x += delta_dis * 1.2 * cos(angle_to_target);
+            v_y += delta_dis * 1.2 * sin(angle_to_target);
+            ROS_INFO("%f %f %f", delta_dis, v_x, v_y);
+            vel_msg.twist.linear.x = v_x;
+            vel_msg.twist.linear.y = v_y;
+            vel_msg.twist.linear.z = 1.0 - lidar_pose_data.z;
+            velocity_pub.publish(vel_msg);
+        }
 
         ros::spinOnce();
         rate.sleep();

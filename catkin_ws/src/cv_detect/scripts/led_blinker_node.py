@@ -68,12 +68,14 @@ while(1):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-        delta_x, delta_y = detect_blue_objects(frame)
-
         led_msg = LedMsg()
-        led_msg.value = False
-        led_msg.delta_x = delta_x
-        led_msg.delta_y = delta_y
+
+        delta = detect_blue_objects(frame)
+        if delta is None:
+            led_msg.value = False
+        else:
+            led_msg.value = True
+            led_msg.delta_x, led_msg.delta_y= delta
 
         pub.publish(led_msg)
 

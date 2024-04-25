@@ -56,12 +56,13 @@ pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
-capture = cv2.VideoCapture('/dev/video0')
+capture = cv2.VideoCapture(0 + cv2.CAP_V4L2)
 
 while(1):
     if capture.isOpened():
         open, frame = capture.read()
         cv2.imshow('frame', frame)
+        cv2.waitKey(1)
 
         # 获取视频信息
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -82,9 +83,8 @@ while(1):
         # 保存视频帧到本地便于查看
         # out.write(frame)
         # out.release()
-        capture.release()
 
-    rospy.spinOnce()
     rate.sleep()
 
+capture.release()
 GPIO.cleanup()

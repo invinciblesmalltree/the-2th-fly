@@ -52,7 +52,7 @@ def blink_led(times):
 # 初始化节点
 rospy.init_node('led_node', anonymous=True)
 
-pub = rospy.Publisher('led_msg', queue_size=10)
+pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体

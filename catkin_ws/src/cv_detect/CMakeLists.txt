@@ -110,7 +110,7 @@ catkin_package(
 #  LIBRARIES cv_detect
 #  CATKIN_DEPENDS PIL cv2 jetson.gpio numpy pyzbar.pyzbar rospy time
 #  DEPENDS system_lib
-DEPENDS message_runtime
+DEPENDS rospy std_msgs message_runtime
 )
 
 ###########

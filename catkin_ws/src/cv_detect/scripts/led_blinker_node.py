@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import Jetson.GPIO as GPIO
 import time
-from cv_detect import LedMsg
+from cv_detect.msg import LedMsg
 
 def detect_blue_objects(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)

@@ -13,7 +13,7 @@ rospy.Subscriber("led_blink_topic", BlinkMsg, blink_led_callback)
 GPIO.setmode(GPIO.BOARD)  
   
 # 设置LED灯连接的物理引脚编号  
-LED_PIN = 12  # 替换为LED灯实际连接的物理引脚编号  
+LED_PIN = 11 # 替换为LED灯实际连接的物理引脚编号  
   
 # 设置LED引脚为输出模式  
 GPIO.setup(LED_PIN, GPIO.OUT)  

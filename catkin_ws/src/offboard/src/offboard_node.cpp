@@ -10,13 +10,14 @@
 
 class target {
   public:
-    float x, y, z;
+    float x, y, z, yaw;
     bool reached = false;
 
-    target(float x, float y, float z) {
+    target(float x, float y, float z, float yaw) {
         this->x = x;
         this->y = y;
         this->z = z;
+        this->yaw = yaw;
     }
 
     void fly_to_target(ros::Publisher &local_pos_pub) {
@@ -24,6 +25,10 @@ class target {
         pose.pose.position.x = x;
         pose.pose.position.y = y;
         pose.pose.position.z = z;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = sin(yaw / 2);
+        pose.pose.orientation.w = cos(yaw / 2);
 
         local_pos_pub.publish(pose);
     }
@@ -62,12 +67,16 @@ int main(int argc, char **argv) {
         nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
     ros::Rate rate(20.0);
 
-    std::vector<target> targets = {
-        target(0, 0, 1.0),          target(1.41, 0.0, 1.0),
-        target(2.82, 0.0, 1.0),     target(3.55, -0.43, 1.0),
-        target(3.225, -1.165, 1.0), target(3.225, -1.48, 1.0),
-        target(2.82, -2.00, 1.0),   target(1.41, -2.00, 1.0),
-        target(0, -2.00, 1.0),      target(0, -2.00, 0.2)};
+    std::vector<target> targets = {target(0, 0, 1.0, 0.0),
+                                   target(1.41, 0.0, 1.0, 0.0),
+                                   target(2.82, 0.0, 1.0, 0.0),
+                                   target(3.55, -0.43, 1.0, -M_PI / 6),
+                                   target(3.225, -1.165, 1.0, -M_PI / 2),
+                                   target(3.225, -1.48, 1.0, -2 * M_PI / 3),
+                                   target(2.82, -2.00, 1.0, -2 * M_PI / 3),
+                                   target(1.41, -2.00, 1.0, -M_PI),
+                                   target(0, -2.00, 1.0, -M_PI),
+                                   target(0, -2.00, 0.2, 0.0)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
@@ -128,12 +137,6 @@ int main(int argc, char **argv) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);
                     target_index++;
-                    if (target_index == 3)
-                        vel_msg.twist.angular.z = -M_PI / 2,
-                        velocity_pub.publish(vel_msg);
-                    else if (target_index == 5)
-                        vel_msg.twist.angular.z = -M_PI / 2,
-                        velocity_pub.publish(vel_msg);
                 }
             }
 

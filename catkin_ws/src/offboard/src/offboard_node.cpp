@@ -87,6 +87,11 @@ int main(int argc, char **argv) {
 
     vel_msg.twist.linear.y = 0.3;
 
+    float distance =
+        sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
+                pow(lidar_pose_data.y - targets[target_index].y, 2) +
+                pow(lidar_pose_data.z - targets[target_index].z, 2));
+
     while (ros::ok()) {
         if (!current_state.armed &&
             (ros::Time::now() - last_request > ros::Duration(5.0))) {
@@ -110,15 +115,29 @@ int main(int argc, char **argv) {
         if (ready_to_fly) {
             if (target_index >= targets.size()) {
                 ROS_INFO("All targets reached");
-                ros::shutdown();
-                break;
-            } else if (!targets[target_index].reached) {
+                if (land_client.call(srv_land) && srv_land.response.success){
+                    ROS_INFO("landing");
+                }
+            } else if (target_index == 2 || target_index == 3 || target_index == 8 || target_index == 9) {
+                while(){
+                    /*开启cv检测程序*/
+                    if(/*判断检测到蓝色物的输出*/){
+                        target center(0.6, -1.0, 1.0);
+                        center.fly_to_target(local_pos_pub); //去往地图中心
+                        if (distance < 0.1) {
+                            center.reached = true;
+                            ROS_INFO("Reached center!");
+                        else if(center.reached == true){
+                            /*找杆绕圈，z轴速度向上找码*/
+                            break;
+                        }
+                    }
+                }
+                ros::spinOnce();
+                rate.sleep();
+            }else if (!targets[target_index].reached) {
                 targets[target_index].fly_to_target(local_pos_pub);
 
-                float distance =
-                    sqrt(pow(lidar_pose_data.x - targets[target_index].x, 2) +
-                         pow(lidar_pose_data.y - targets[target_index].y, 2) +
-                         pow(lidar_pose_data.z - targets[target_index].z, 2));
                 if (distance < 0.1) {
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);

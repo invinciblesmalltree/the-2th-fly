@@ -35,13 +35,6 @@ def detect_blue_objects(image):
 
     return None
 
-    barcodes = decode(image)
-
-    for barcode in barcodes:
-        barcode_type = barcode.type
-        barcode_data = barcode.data.decode('utf-8')
-        print(f"发现条形码：类型：{barcode_type}，数据：{barcode_data}")
-
 def blink_led(times):
     # 设置GPIO模式为board
     GPIO.setmode(GPIO.BOARD)  
@@ -68,6 +61,7 @@ capture = cv2.VideoCapture(0)
 while(1):
     if capture.isOpened():
         open, frame = capture.read()
+        cv2.imshow('frame', frame)
 
         # 获取视频信息
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -77,7 +71,7 @@ while(1):
         delta_x, delta_y = detect_blue_objects(frame)
 
         led_msg = LedMsg()
-        led_msg.value = false
+        led_msg.value = False
         led_msg.delta_x = delta_x
         led_msg.delta_y = delta_y
 

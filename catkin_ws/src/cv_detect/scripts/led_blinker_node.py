@@ -3,7 +3,7 @@
 import rospy
 import cv2
 import numpy as np
-import jetson.gpio as GPIO
+import Jetson.GPIO as GPIO
 import time
 from cv_detect import LedMsg
 

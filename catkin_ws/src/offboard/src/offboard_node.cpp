@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
                                    target(1.41, -2.00, 1.0, -M_PI),
                                    target(0.71, -2.00, 1.0, -M_PI),
                                    target(0, -2.00, 1.0, -M_PI),
-                                   target(0, -2.00, 0.2, 0.0)};
+                                   target(0, -2.00, 0.2, -M_PI)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();

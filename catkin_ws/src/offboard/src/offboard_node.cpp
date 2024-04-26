@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     bool has_passed_blue = false;
     bool has_passed_half = false;
     target blue_point(0, 0, 0, 0);
-    target scan_point(0.6, -0.8, 1.5, -M_PI);
+    target scan_point(0.6, -1.0, 1.5, -M_PI);
     target pole_point(0, -1.0, 1.5, -M_PI);
     target round_point(0, -1.0, 1.5, -M_PI);
 
@@ -200,15 +200,15 @@ int main(int argc, char **argv) {
                     scan_point.reached = true;
             } else {
                 vel_msg.twist.linear.x = 0;
-                vel_msg.twist.linear.y = -0.2;
+                vel_msg.twist.linear.y = barcode_data.delta_x * 0.01;
                 vel_msg.twist.linear.z = 0;
                 velocity_pub.publish(vel_msg);
-                ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
+                // ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
 
-                if (supersonic_data.data < 100) {
+                if (barcode_data.delta_x < 50) {
                     pole_point.x = lidar_pose_data.x -
                                    supersonic_data.data / 100.0 - 0.225;
-                    pole_point.y = lidar_pose_data.y - (0.2);
+                    pole_point.y = lidar_pose_data.y;
                     pole_point.z = 1.5;
                     pole_point.yaw = lidar_pose_data.yaw;
                     scan_point.x = pole_point.x + 0.3;

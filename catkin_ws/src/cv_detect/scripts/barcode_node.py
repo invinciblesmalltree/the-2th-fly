@@ -64,7 +64,7 @@ pub = rospy.Publisher('barcode_msg', BarMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
-capture = cv2.VideoCapture(0 + cv2.CAP_V4L2) #TODO:insmtr更改摄像头设备号
+capture = cv2.VideoCapture('/dev/ahead') #TODO:insmtr更改摄像头设备号
 led_open = False # led连闪开关
 last_request = rospy.Time.now()
 

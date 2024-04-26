@@ -52,7 +52,7 @@ pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
-capture = cv2.VideoCapture(0 + cv2.CAP_V4L2)
+capture = cv2.VideoCapture('/dev/ground')
 
 while(1):
     if capture.isOpened():

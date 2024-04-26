@@ -9,18 +9,29 @@ import Jetson.GPIO as GPIO
 import time
 from cv_detect.msg import BarMsg
 
+def detect_green(image, width):
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # 定义绿色的HSV范围
+    lower_green = np.array([35, 43, 46])
+    upper_green = np.array([77, 255, 255])
+
+    mask = cv2.inRange(hsv_image, lower_green, upper_green)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) > 0:
+        # 取最大的轮廓
+        max_contour = max(contours, key=cv2.contourArea)
+    
+        # 计算轮廓的中心点
+        moments = cv2.moments(max_contour)
+        if moments['m00'] != 0:  # 防止除以0
+            x = int(moments['m10'] / moments['m00'])
+            y = int(moments['m01'] / moments['m00'])
+            center = (x, y)
+            return int(x-width/2)
+    return 2147483647
+
 def decode_barcode(image):
-    # v1=cv2.Canny(image,120,250) # TODO:阈值待调
-    # cv2.imshow('v1', v1)
-
-    # if perprocess(image) is not None:
-    #     x, y, w, h = perprocess(image)
-    #     pst1 = np.float32([[x, y], [x+w, y], [x, y+h], [x+w, y+h]]) #顺序左上、右上、左下、右下
-    #     pst2 = np.float32([[0, 0], [150, 0], [0, 300], [150, 300]])
-    #     M = cv2.getPerspectiveTransform(pst1, pst2) # 变换矩阵
-    #     image = cv2.warpPerspective(frame, M, (frame.shape[1], frame.shape[0]))
-    #     cv2.imshow('image', image)
-
         barcodes = decode(image)
         if len(barcodes) == 0:
             return None
@@ -69,8 +80,10 @@ rate = rospy.Rate(20)
 
 # cv识别程序主体
 capture = cv2.VideoCapture('/dev/ahead')
+width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 led_open = False # led连闪开关
 last_request = rospy.Time.now()
+n = -1
 
 while(1):
     if capture.isOpened():
@@ -84,6 +97,9 @@ while(1):
         # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         bar_msg = BarMsg()
+        bar_msg.delta_x=detect_green(frame, width)
+        if led_open:
+            bar_msg.n = n
 
         if not led_open:
             ret = decode_barcode(frame)
@@ -95,9 +111,10 @@ while(1):
                     continue
                 led_open = True
                 bar_msg.n= ret
+                n = ret
                 rospy.loginfo('Barcode: %s', ret)
 
-            pub.publish(bar_msg)
+        pub.publish(bar_msg)
 
         # 每10秒闪烁1轮
         if led_open and rospy.Time.now()-last_request > rospy.Duration(5):

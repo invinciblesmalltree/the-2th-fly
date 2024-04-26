@@ -10,12 +10,12 @@ from cv_detect.msg import LedMsg
 def detect_blue_objects(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    # 定义条形码颜色在 HSV 颜色空间中的范围
-    lower_color = np.array([0, 0, 0])  # 条形码颜色的下界
-    upper_color = np.array([180, 255, 100])  # 条形码颜色的上界
+    # 定义蓝色的HSV范围
+    lower_blue = np.array([100, 43, 46])
+    upper_blue = np.array([124, 255, 255])
 
-    # 对原始图像应用掩膜
-    qr_code = cv2.bitwise_and(img, img, mask=mask)
+    # 提取蓝色区域
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -36,7 +36,7 @@ def normal_blink(times):
     GPIO.setmode(GPIO.BOARD)  
 
     # 设置LED输出引脚
-    LED_PIN = 12
+    LED_PIN = 11
     GPIO.setup(LED_PIN, GPIO.OUT)
 
     for _ in range(times):
@@ -46,13 +46,13 @@ def normal_blink(times):
         time.sleep(0.5)
 
 # 初始化节点
-rospy.init_node('led_node', anonymous=True)
+rospy.init_node('blue_node', anonymous=True)
 
-pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
+pub = rospy.Publisher('bule_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
-capture = cv2.VideoCapture(0 + cv2.CAP_V4L2)
+capture = cv2.VideoCapture('/dev/ground')
 
 while(1):
     if capture.isOpened():
@@ -63,7 +63,6 @@ while(1):
         # 获取视频信息
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         led_msg = LedMsg()
 
@@ -74,12 +73,7 @@ while(1):
             led_msg.value = True
             led_msg.delta_x, led_msg.delta_y= delta
 
-        # normal_blink(5)
         pub.publish(led_msg)
-
-        # 保存视频帧到本地便于查看
-        # out.write(frame)
-        # out.release()
 
     rate.sleep()
 

@@ -155,7 +155,7 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 catkin_install_python(PROGRAMS 
-  scripts/led_blinker_node.py
+  scripts/blue_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -48,7 +48,7 @@ def normal_blink(times):
 # 初始化节点
 rospy.init_node('blue_node', anonymous=True)
 
-pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
+pub = rospy.Publisher('bule_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体

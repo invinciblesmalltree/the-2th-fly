@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from pyzbar.pyzbar import decode
 from PIL import Image
-import jetson.gpio as GPIO
+import Jetson.GPIO as GPIO
 import time
 from cv_detect.msg import BarMsg
 

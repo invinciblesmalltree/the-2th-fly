@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
                 if (supersonic_data.data < 100) {
                     pole_point.x = lidar_pose_data.x -
                                    supersonic_data.data / 100.0 - 0.225;
-                    pole_point.y = lidar_pose_data.y - 0.1;
+                    pole_point.y = lidar_pose_data.y - (0.2);
                     pole_point.z = 1.5;
                     pole_point.yaw = lidar_pose_data.yaw;
                     scan_point.x = pole_point.x + 0.3;

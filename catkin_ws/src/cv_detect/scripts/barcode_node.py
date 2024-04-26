@@ -10,19 +10,20 @@ import time
 from cv_detect.msg import BarMsg
 
 def decode_barcode(image):
-    v1=cv2.Canny(image,120,250) # TODO:阈值待调
+    # v1=cv2.Canny(image,120,250) # TODO:阈值待调
+    # cv2.imshow('v1', v1)
 
-    if perprocess(image) is not None:
-        x, y, w, h = perprocess(image)
-        pst1 = np.float32([[x, y], [x+w, y], [x, y+h], [x+w, y+h]]) #顺序左上、右上、左下、右下
-        pst2 = np.float32([[0, 0], [150, 0], [0, 300], [150, 300]])
-        M = cv2.getPerspectiveTransform(pst1, pst2) # 变换矩阵
-        image = cv2.warpPerspective(frame, M, (frame.shape[1], frame.shape[0]))
+    # if perprocess(image) is not None:
+    #     x, y, w, h = perprocess(image)
+    #     pst1 = np.float32([[x, y], [x+w, y], [x, y+h], [x+w, y+h]]) #顺序左上、右上、左下、右下
+    #     pst2 = np.float32([[0, 0], [150, 0], [0, 300], [150, 300]])
+    #     M = cv2.getPerspectiveTransform(pst1, pst2) # 变换矩阵
+    #     image = cv2.warpPerspective(frame, M, (frame.shape[1], frame.shape[0]))
+    #     cv2.imshow('image', image)
 
         barcodes = decode(image)
         if len(barcodes) == 0:
             return None
-        barcode_type = barcodes[0].type
         barcode_data = barcodes[0].data.decode('utf-8')
         return int(barcode_data)
 
@@ -32,6 +33,7 @@ def perprocess(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # 二值化处理
     _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+    cv2.imshow('thresh', thresh)
     # 提取轮廓
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     if contours is not None:
@@ -94,7 +96,6 @@ while(1):
                 led_open = True
                 bar_msg.n= ret
                 rospy.loginfo('Barcode: %s', ret)
-                cv2.destroyAllWindows()
 
             pub.publish(bar_msg)
 

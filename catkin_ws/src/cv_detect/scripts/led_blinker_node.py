@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+#-*-coding:utf-8-*-
+import rospy
+import cv2
+import numpy as np
+import Jetson.GPIO as GPIO
+import time
+from cv_detect.msg import LedMsg
+
+def detect_blue_objects(image):
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # 定义条形码颜色在 HSV 颜色空间中的范围
+    lower_color = np.array([0, 0, 0])  # 条形码颜色的下界
+    upper_color = np.array([180, 255, 100])  # 条形码颜色的上界
+
+    # 对原始图像应用掩膜
+    qr_code = cv2.bitwise_and(img, img, mask=mask)
+
+    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+
+        if area > 1000:
+            # 找到图形轮廓中心坐标
+            M = cv2.moments(contour)
+            delta_x = int(M['m10'] / M['m00']-width/2)
+            delta_y = -int(M['m01'] / M['m00']-height/2)
+            return delta_x, delta_y
+
+    return None
+
+def normal_blink(times):
+    # 设置GPIO模式为board
+    GPIO.setmode(GPIO.BOARD)  
+
+    # 设置LED输出引脚
+    LED_PIN = 12
+    GPIO.setup(LED_PIN, GPIO.OUT)
+
+    for _ in range(times):
+        GPIO.output(LED_PIN, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(LED_PIN, GPIO.LOW)
+        time.sleep(0.5)
+
+# 初始化节点
+rospy.init_node('led_node', anonymous=True)
+
+pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
+rate = rospy.Rate(20)
+
+# cv识别程序主体
+capture = cv2.VideoCapture(0 + cv2.CAP_V4L2)
+
+while(1):
+    if capture.isOpened():
+        open, frame = capture.read()
+        cv2.imshow('frame', frame)
+        cv2.waitKey(1)
+
+        # 获取视频信息
+        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+
+        led_msg = LedMsg()
+
+        delta = detect_blue_objects(frame)
+        if delta is None:
+            led_msg.value = False
+        else:
+            led_msg.value = True
+            led_msg.delta_x, led_msg.delta_y= delta
+
+        # normal_blink(5)
+        pub.publish(led_msg)
+
+        # 保存视频帧到本地便于查看
+        # out.write(frame)
+        # out.release()
+
+    rate.sleep()
+
+capture.release()
+GPIO.cleanup()

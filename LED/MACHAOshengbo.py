@@ -1,4 +1,4 @@
-import jetson.gpio as GPIO  
+import jetson.GPIO as GPIO  
 import time  
   
 # 设置GPIO模式为board  
@@ -41,7 +41,7 @@ def get_distance():
 while True:  
     distance = get_distance()  
       
-    if distance < 0.3:  
+    if distance < 0.5:  
         print("find it")  
       
     time.sleep(1)  # 每秒检测一次  

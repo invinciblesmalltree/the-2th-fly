@@ -40,7 +40,7 @@ def perprocess(image):
             area = cv2.contourArea(contour)
             # 边界矩形
             x, y, w, h = cv2.boundingRect(contour)
-            if area > 1000 and h / w > 1 :
+            if area > 1000 :
                 return x, y, w, h
             
     return None

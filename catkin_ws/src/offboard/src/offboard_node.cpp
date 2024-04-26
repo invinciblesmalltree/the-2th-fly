@@ -88,23 +88,23 @@ int main(int argc, char **argv) {
     ros::Rate rate(20.0);
 
     std::vector<target> targets = {
-        target(0, 0, 1.5, 0.0),
-        target(0.71, 0.0, 1.5, 0.0),
-        target(1.41, 0.0, 1.5, 0.0),
-        target(2.12, 0.0, 1.5, 0.0),
-        target(2.82, 0.0, 1.5, 0.0),
-        target(3.185, -0.215, 1.5, -M_PI / 6),
-        target(3.35, -0.43, 1.5, -M_PI / 3), // x少了0.2
-        target(3.388, -0.798, 1.5, -2 * M_PI / 3),
-        target(3.225, -1.165, 1.5, -2 * M_PI / 3),
-        target(3.225, -1.48, 1.5, -7 * M_PI / 12),
-        target(3.023, -1.74, 1.5, -2 * M_PI / 3),
-        target(2.82, -1.80, 1.5, -5 * M_PI / 6), // y多了0.2
-        target(2.12, -2.00, 1.5, -M_PI),
-        target(1.41, -2.00, 1.5, -M_PI),
-        target(0.71, -2.00, 1.5, -M_PI),
-        target(0, -2.00, 1.5, -M_PI),
-        target(0, -2.00, 0.8, -M_PI),
+        target(0, 0, 1.25, 0.0),
+        target(0.71, 0.0, 1.25, 0.0),
+        target(1.41, 0.0, 1.25, 0.0),
+        target(2.12, 0.0, 1.25, 0.0),
+        target(2.82, 0.0, 1.25, 0.0),
+        target(3.185, -0.215, 1.25, -M_PI / 6),
+        target(3.35, -0.43, 1.25, -M_PI / 3), // x少了0.2
+        target(3.388, -0.798, 1.25, -2 * M_PI / 3),
+        target(3.225, -1.165, 1.25, -2 * M_PI / 3),
+        target(3.225, -1.48, 1.25, -7 * M_PI / 12),
+        target(3.023, -1.74, 1.25, -2 * M_PI / 3),
+        target(2.82, -1.80, 1.25, -5 * M_PI / 6), // y多了0.2
+        target(2.12, -2.00, 1.25, -M_PI),
+        target(1.41, -2.00, 1.25, -M_PI),
+        target(0.71, -2.00, 1.25, -M_PI),
+        target(0, -2.00, 1.25, -M_PI),
+        target(0, -2.00, 0.7, -M_PI),
         target(0, -2.00, 0.1, -M_PI)};
 
     while (ros::ok() && !current_state.connected) {
@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
     bool has_passed_blue = false;
     bool has_passed_half = false;
     target blue_point(0, 0, 0, 0);
-    target scan_point(0.7, -1.0, 1.5, -M_PI);
-    target pole_point(0, -1.0, 1.5, -M_PI);
-    target round_point(0, -1.0, 1.5, -M_PI);
+    target scan_point(0.7, -1.0, 1.25, -M_PI);
+    target pole_point(0, -1.0, 1.25, -M_PI);
+    target round_point(0, -1.0, 1.25, -M_PI);
 
     while (ros::ok) {
         if (!current_state.armed &&
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
                 if (!has_passed_blue && blue_data.value) {
                     blue_point.x = lidar_pose_data.x;
                     blue_point.y = lidar_pose_data.y;
-                    blue_point.z = 1.5;
+                    blue_point.z = 1.25;
                     blue_point.yaw = lidar_pose_data.yaw;
                     last_request = ros::Time::now();
                     mode = 1;
@@ -210,15 +210,15 @@ int main(int argc, char **argv) {
                     pole_point.x = lidar_pose_data.x -
                                    supersonic_data.data / 100.0 - 0.225;
                     pole_point.y = lidar_pose_data.y;
-                    pole_point.z = 1.5;
+                    pole_point.z = 1.25;
                     pole_point.yaw = lidar_pose_data.yaw;
                     scan_point.x = pole_point.x + 0.3;
                     scan_point.y = pole_point.y;
-                    scan_point.z = 1.5;
+                    scan_point.z = 1.25;
                     scan_point.reached = false;
                     round_point.x = pole_point.x + 0.5;
                     round_point.y = pole_point.y;
-                    round_point.z = 1.5;
+                    round_point.z = 1.25;
                     round_point.yaw = -M_PI;
                     mode = 3;
                     ROS_INFO("Pole: (%f, %f)", pole_point.x, pole_point.y);
@@ -241,8 +241,8 @@ int main(int argc, char **argv) {
                     targets.pop_back();
                     targets.pop_back();
                     targets.pop_back();
-                    targets.push_back(target(n * 0.1, -2.0, 1.5, -M_PI));
-                    targets.push_back(target(n * 0.1, -2.0, 0.8, -M_PI));
+                    targets.push_back(target(n * 0.1, -2.0, 1.25, -M_PI));
+                    targets.push_back(target(n * 0.1, -2.0, 0.7, -M_PI));
                     targets.push_back(target(n * 0.1, -2.0, 0.1, -M_PI));
                     mode = 4;
                     ROS_INFO("Barcode: %d", n);
@@ -287,7 +287,7 @@ int main(int argc, char **argv) {
                 // ROS_INFO("%f %f %f", delta_dis, v_x, v_y);
                 vel_msg.twist.linear.x = v_x;
                 vel_msg.twist.linear.y = v_y;
-                vel_msg.twist.linear.z = 1.5 - lidar_pose_data.z;
+                vel_msg.twist.linear.z = 1.25 - lidar_pose_data.z;
                 velocity_pub.publish(vel_msg);
             }
         } else if (mode == 5) { // 返回蓝色物体代码

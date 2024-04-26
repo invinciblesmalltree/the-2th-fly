@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
     bool has_passed_blue = false;
     bool has_passed_half = false;
     target blue_point(0, 0, 0, 0);
+    target first_scan_point(1.0, -1.0, 1.25, -M_PI);
     target scan_point(0.7, -1.0, 1.25, -M_PI);
     target pole_point(0, -1.0, 1.25, -M_PI);
     target round_point(0, -1.0, 1.25, -M_PI);
@@ -184,13 +185,25 @@ int main(int argc, char **argv) {
                     ROS_INFO("Mode 1");
                 }
             }
-        } else if (mode == 1) { // 蓝色物体检测并悬停代码
+        } else if (mode == 1) { // 蓝色物体检测并悬停并飞到杆跟前代码
             blue_point.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(7.0)) {
+            if (!has_passed_blue &&
+                (ros::Time::now() - last_request > ros::Duration(6.0))) {
                 has_passed_blue = true;
-                mode = 2;
-                ROS_INFO("Mode 2");
             }
+            if (has_passed_blue)
+                if (!first_scan_point.reached) {
+                    first_scan_point.fly_to_target(local_pos_pub);
+                    float distance =
+                        sqrt(pow(lidar_pose_data.x - first_scan_point.x, 2) +
+                             pow(lidar_pose_data.y - first_scan_point.y, 2) +
+                             pow(lidar_pose_data.z - first_scan_point.z, 2));
+                    if (distance < 0.1)
+                        first_scan_point.reached = true;
+                } else {
+                    mode = 2;
+                    ROS_INFO("Mode 2");
+                }
         } else if (mode == 2) { // 找杆代码
             if (!scan_point.reached) {
                 scan_point.fly_to_target(local_pos_pub);
@@ -201,12 +214,12 @@ int main(int argc, char **argv) {
                     scan_point.reached = true;
             } else {
                 vel_msg.twist.linear.x = 0;
-                vel_msg.twist.linear.y = barcode_data.delta_x * 0.01;
+                vel_msg.twist.linear.y = barcode_data.delta_x > 0 ? 0.1 : -0.1;
                 vel_msg.twist.linear.z = 0;
                 velocity_pub.publish(vel_msg);
                 // ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
 
-                if (barcode_data.delta_x < 50) {
+                if (abs(barcode_data.delta_x) < 50) {
                     if (supersonic_data.data > 100)
                         supersonic_data.data = 50;
                     pole_point.x = lidar_pose_data.x -

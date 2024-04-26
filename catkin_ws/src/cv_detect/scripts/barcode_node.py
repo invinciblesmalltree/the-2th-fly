@@ -28,7 +28,7 @@ def detect_green(image, width):
             x = int(moments['m10'] / moments['m00'])
             y = int(moments['m01'] / moments['m00'])
             center = (x, y)
-            return int(x-width/2)
+            return int(x - width / 2)
     return 2147483647
 
 def decode_barcode(image):
@@ -82,6 +82,7 @@ rate = rospy.Rate(20)
 capture = cv2.VideoCapture('/dev/ahead')
 width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 led_open = False # led连闪开关
+pole_detected = False
 last_request = rospy.Time.now()
 n = -1
 
@@ -97,11 +98,13 @@ while(1):
         # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         bar_msg = BarMsg()
-        bar_msg.delta_x=detect_green(frame, width)
-        if led_open:
-            bar_msg.n = n
+        bar_msg.delta_x = detect_green(frame, width)
+        if not pole_detected:
+            bar_msg.n = -1
+            if bar_msg.delta_x < 50:
+                pole_detected = True
 
-        if not led_open:
+        if pole_detected and not led_open:
             ret = decode_barcode(frame)
             if ret is None:
                 bar_msg.n = -1

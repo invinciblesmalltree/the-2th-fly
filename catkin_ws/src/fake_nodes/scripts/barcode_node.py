@@ -5,7 +5,7 @@ from lidar_data.msg import LidarPose
 
 def callback(lidar_msg):
     global pub, bar_msg
-    bar_msg.delta_x = int((-1.1 - lidar_msg.y) * 300)
+    bar_msg.delta_x = int((-1.0 + (0.2) - lidar_msg.y) * 1500)
 
 def barcode_publisher():
     global pub, bar_msg
@@ -15,7 +15,7 @@ def barcode_publisher():
     rate = rospy.Rate(20)  # 设置发布频率为20 Hz
 
     bar_msg = BarMsg()
-    bar_msg.n = 3
+    bar_msg.n = 5
     bar_msg.delta_x = 0
 
     while not rospy.is_shutdown():

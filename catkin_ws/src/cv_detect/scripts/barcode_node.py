@@ -87,12 +87,14 @@ while(1):
         else:
             led_open = True
             bar_msg.n= ret
+            rospy.loginfo('Barcode: %s', ret)
 
         pub.publish(bar_msg)
 
         # 每10秒闪烁1轮
         if led_open and rospy.Time.now()-last_request > 10:
             blink_led(ret)
+            last_request = rospy.Time.now()
 
         # 保存视频帧到本地便于查看
         # out.write(frame)

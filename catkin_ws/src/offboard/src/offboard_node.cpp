@@ -74,9 +74,9 @@ int main(int argc, char **argv) {
     ros::Subscriber led_sub =
         nh.subscribe<cv_detect::LedMsg>("bule_msg", 10, led_cb);
     ros::Subscriber barcode_sub =
-        nh.subscribe<cv_detect::LedMsg>("barcode_msg", 10, barcode_cb);
+        nh.subscribe<cv_detect::BarMsg>("barcode_msg", 10, barcode_cb);
     ros::Subscriber supersonic_sub =
-        nh.subscribe<cv_detect::LedMsg>("supersonic_data", 10, supersonic_cb);
+        nh.subscribe<std_msgs::Int32>("supersonic_data", 10, supersonic_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>(
         "mavros/setpoint_position/local", 10);
     ros::Publisher velocity_pub = nh.advertise<geometry_msgs::TwistStamped>(
@@ -206,8 +206,8 @@ int main(int argc, char **argv) {
                 ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
 
                 if (supersonic_data.data < 100) {
-                    pole_point.x =
-                        lidar_pose_data.x - supersonic_data.data / 100.0;
+                    pole_point.x = lidar_pose_data.x -
+                                   supersonic_data.data / 100.0 - 0.225;
                     pole_point.y = lidar_pose_data.y - 0.1;
                     pole_point.z = 1.5;
                     pole_point.yaw = lidar_pose_data.yaw;

@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
     ros::Time last_request = ros::Time::now();
 
     size_t target_index = 0;
+    target first_target(0, 0, 0.5, 0.0);
 
     // vel_msg.twist.linear.y = 0.1;
     float pole_x = 0.5, pole_y = 0.0, pole_z = 1.0;
@@ -151,12 +152,13 @@ int main(int argc, char **argv) {
         //     }
         // }
 
-        if (!targets[0].reached) {
-            targets[0].fly_to_target(local_pos_pub);
-            float distance = sqrt(pow(lidar_pose_data.x - targets[0].x, 2) +
-                                  pow(lidar_pose_data.y - targets[0].y, 2));
+        if (!first_target.reached) {
+            first_target.fly_to_target(local_pos_pub);
+            float distance = sqrt(pow(lidar_pose_data.x - first_target.x, 2) +
+                                  pow(lidar_pose_data.y - first_target.y, 2));
+                                //   ROS_INFO("%f", distance);
             if (distance < 0.05)
-                targets[0].reached = true;
+                first_target.reached = true;
         } else {
             float angle_to_target = vector2theta(pole_x - lidar_pose_data.x,
                                                  pole_y - lidar_pose_data.y);
@@ -168,15 +170,15 @@ int main(int argc, char **argv) {
             vel_msg.twist.angular.z = angular_angle * 2.5;
             float distance = sqrt(pow(lidar_pose_data.x - pole_x, 2) +
                                   pow(lidar_pose_data.y - pole_y, 2));
-            float v_x = 0.1 * cos(lidar_pose_data.yaw + M_PI / 2),
-                  v_y = 0.1 * sin(lidar_pose_data.yaw + M_PI / 2),
+            float v_x = 0.2 * cos(lidar_pose_data.yaw + M_PI / 2),
+                  v_y = 0.2 * sin(lidar_pose_data.yaw + M_PI / 2),
                   delta_dis = distance - 0.5;
-            v_x += delta_dis * 1.2 * cos(angle_to_target);
-            v_y += delta_dis * 1.2 * sin(angle_to_target);
+            v_x += delta_dis * 2 * cos(angle_to_target);
+            v_y += delta_dis * 2 * sin(angle_to_target);
             ROS_INFO("%f %f %f", delta_dis, v_x, v_y);
             vel_msg.twist.linear.x = v_x;
             vel_msg.twist.linear.y = v_y;
-            vel_msg.twist.linear.z = 1.0 - lidar_pose_data.z;
+            vel_msg.twist.linear.z = 0.5 - lidar_pose_data.z;
             velocity_pub.publish(vel_msg);
         }
 

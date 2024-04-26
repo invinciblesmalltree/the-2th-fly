@@ -207,6 +207,8 @@ int main(int argc, char **argv) {
                 // ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
 
                 if (barcode_data.delta_x < 50) {
+                    if (supersonic_data.data > 100)
+                        supersonic_data.data = 50;
                     pole_point.x = lidar_pose_data.x -
                                    supersonic_data.data / 100.0 - 0.225;
                     pole_point.y = lidar_pose_data.y;

@@ -36,7 +36,7 @@ def normal_blink(times):
     GPIO.setmode(GPIO.BOARD)  
 
     # 设置LED输出引脚
-    LED_PIN = 12
+    LED_PIN = 11
     GPIO.setup(LED_PIN, GPIO.OUT)
 
     for _ in range(times):
@@ -46,7 +46,7 @@ def normal_blink(times):
         time.sleep(0.5)
 
 # 初始化节点
-rospy.init_node('led_node', anonymous=True)
+rospy.init_node('blue_node', anonymous=True)
 
 pub = rospy.Publisher('led_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
@@ -63,7 +63,6 @@ while(1):
         # 获取视频信息
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         led_msg = LedMsg()
 
@@ -74,12 +73,7 @@ while(1):
             led_msg.value = True
             led_msg.delta_x, led_msg.delta_y= delta
 
-        # normal_blink(5)
         pub.publish(led_msg)
-
-        # 保存视频帧到本地便于查看
-        # out.write(frame)
-        # out.release()
 
     rate.sleep()
 

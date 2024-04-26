@@ -48,14 +48,14 @@ def blink_led(times):
     GPIO.setmode(GPIO.BOARD)  
 
     # 设置LED输出引脚
-    LED_PIN = 12
+    LED_PIN = 11
     GPIO.setup(LED_PIN, GPIO.OUT)
 
     for _ in range(times):
         GPIO.output(LED_PIN, GPIO.HIGH)
-        time.sleep(1)
+        time.sleep(0.5)
         GPIO.output(LED_PIN, GPIO.LOW)
-        time.sleep(1)
+        time.sleep(0.5)
 
 # 初始化节点
 rospy.init_node('barcode_node', anonymous=True)
@@ -65,6 +65,8 @@ rate = rospy.Rate(20)
 
 # cv识别程序主体
 capture = cv2.VideoCapture(0 + cv2.CAP_V4L2) #TODO:insmtr更改摄像头设备号
+led_open = False # led连闪开关
+last_request = rospy.Time.now()
 
 while(1):
     if capture.isOpened():
@@ -81,13 +83,16 @@ while(1):
 
         ret = decode_barcode(frame)
         if ret is None:
-            bar_msg.value = False
+            bar_msg.n = -1
         else:
-            bar_msg.value = True
+            led_open = True
             bar_msg.n= ret
 
-        # blink_led(ret)
         pub.publish(bar_msg)
+
+        # 每10秒闪烁1轮
+        if led_open and rospy.Time.now()-last_request > 10:
+            blink_led(ret)
 
         # 保存视频帧到本地便于查看
         # out.write(frame)

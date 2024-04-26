@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     ros::Subscriber lidar_data_sub =
         nh.subscribe<lidar_data::LidarPose>("lidar_data", 10, lidar_cb);
     ros::Subscriber led_sub =
-        nh.subscribe<cv_detect::LedMsg>("bule_msg", 10, led_cb);
+        nh.subscribe<cv_detect::LedMsg>("blue_msg", 10, led_cb);
     ros::Subscriber barcode_sub =
         nh.subscribe<cv_detect::BarMsg>("barcode_msg", 10, barcode_cb);
     ros::Subscriber supersonic_sub =
@@ -104,8 +104,8 @@ int main(int argc, char **argv) {
         target(1.41, -2.00, 1.5, -M_PI),
         target(0.71, -2.00, 1.5, -M_PI),
         target(0, -2.00, 1.5, -M_PI),
-        target(0, 0, 0.8, -M_PI),
-        target(0, 0, 0.1, -M_PI)};
+        target(0, -2.00, 0.8, -M_PI),
+        target(0, -2.00, 0.1, -M_PI)};
 
     while (ros::ok() && !current_state.connected) {
         ros::spinOnce();
@@ -180,6 +180,7 @@ int main(int argc, char **argv) {
                     last_request = ros::Time::now();
                     mode = 1;
                     ROS_INFO("Blue object detected");
+                    ROS_INFO("Blue: (%f, %f)", blue_point.x, blue_point.y);
                     ROS_INFO("Mode 1");
                 }
             }
@@ -235,13 +236,14 @@ int main(int argc, char **argv) {
             } else {
                 if (barcode_data.n != -1) {
                     n = barcode_data.n;
+                    ROS_INFO("Barcode: %d", n);
                     targets.pop_back();
                     targets.pop_back();
                     targets.pop_back();
                     targets.pop_back();
-                    targets.push_back(target(0, -2.0 + n * 0.1, 1.5, 0.0));
-                    targets.push_back(target(0, -2.0 + n * 0.1, 0.8, 0.0));
-                    targets.push_back(target(0, -2.0 + n * 0.1, 0.1, 0.0));
+                    targets.push_back(target(n * 0.1, -2.0, 1.5, -M_PI));
+                    targets.push_back(target(n * 0.1, -2.0, 0.8, -M_PI));
+                    targets.push_back(target(n * 0.1, -2.0, 0.1, -M_PI));
                     mode = 4;
                     ROS_INFO("Barcode: %d", n);
                     ROS_INFO("Mode 4");
@@ -282,7 +284,7 @@ int main(int argc, char **argv) {
                       delta_dis = distance - 0.5;
                 v_x += delta_dis * 2 * cos(angle_to_target);
                 v_y += delta_dis * 2 * sin(angle_to_target);
-                ROS_INFO("%f %f %f", delta_dis, v_x, v_y);
+                // ROS_INFO("%f %f %f", delta_dis, v_x, v_y);
                 vel_msg.twist.linear.x = v_x;
                 vel_msg.twist.linear.y = v_y;
                 vel_msg.twist.linear.z = 1.5 - lidar_pose_data.z;

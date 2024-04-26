@@ -16,14 +16,16 @@ def decode_barcode(image):
         x, y, w, h = perprocess(image)
         pst1 = np.float32([[x, y], [x+w, y], [x, y+h], [x+w, y+h]]) #顺序左上、右上、左下、右下
         pst2 = np.float32([[0, 0], [150, 0], [0, 300], [150, 300]])
-        M = cv.getPerspectiveTransform(pst1, pst2) # 变换矩阵
-        image = cv.warpPerspective(frame, M, (frame.shape[1], frame.shape[0]))
+        M = cv2.getPerspectiveTransform(pst1, pst2) # 变换矩阵
+        image = cv2.warpPerspective(frame, M, (frame.shape[1], frame.shape[0]))
 
-        barcode_type = decode(image).type
-        barcode_data = decode(image).data.decode('utf-8')
-        return barcode_data
+        barcodes = decode(image)
+        if len(barcodes) == 0:
+            return None
+        barcode_type = barcodes[0].type
+        barcode_data = barcodes[0].data.decode('utf-8')
+        return int(barcode_data)
 
-    return None
 
 def perprocess(image):
     # 灰度图处理
@@ -64,7 +66,7 @@ pub = rospy.Publisher('barcode_msg', BarMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
-capture = cv2.VideoCapture('/dev/ahead') #TODO:insmtr更改摄像头设备号
+capture = cv2.VideoCapture('/dev/ahead')
 led_open = False # led连闪开关
 last_request = rospy.Time.now()
 
@@ -81,18 +83,20 @@ while(1):
 
         bar_msg = BarMsg()
 
-        ret = decode_barcode(frame)
-        if ret is None:
-            bar_msg.n = -1
-        else:
-            led_open = True
-            bar_msg.n= ret
-            rospy.loginfo('Barcode: %s', ret)
+        if not led_open:
+            ret = decode_barcode(frame)
+            if ret is None:
+                bar_msg.n = -1
+            else:
+                led_open = True
+                bar_msg.n= ret
+                rospy.loginfo('Barcode: %s', ret)
+                cv2.destroyAllWindows()
 
-        pub.publish(bar_msg)
+            pub.publish(bar_msg)
 
         # 每10秒闪烁1轮
-        if led_open and rospy.Time.now()-last_request > 10:
+        if led_open and rospy.Time.now()-last_request > rospy.Duration(10):
             blink_led(ret)
             last_request = rospy.Time.now()
 

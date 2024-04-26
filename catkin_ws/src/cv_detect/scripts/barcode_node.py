@@ -117,6 +117,9 @@ while(1):
                 n = ret
                 rospy.loginfo('Barcode: %s', ret)
 
+        if led_open:
+            bar_msg.n = n
+
         pub.publish(bar_msg)
 
         # 每10秒闪烁1轮

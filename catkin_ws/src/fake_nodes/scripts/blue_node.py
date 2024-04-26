@@ -5,7 +5,7 @@ from lidar_data.msg import LidarPose
 
 def callback(lidar_msg):
     global pub, led_msg
-    led_msg.value = lidar_msg.x > 1.5 and abs(lidar_msg.yaw - 3.14) < 0.1   # 当 x 大于 1 时设置 value 为 True
+    led_msg.value = lidar_msg.x < 1.5 and abs(lidar_msg.yaw - 3.14) < 0.1   # 当 x 大于 1 时设置 value 为 True
 
 def blue_publisher():
     global pub, led_msg

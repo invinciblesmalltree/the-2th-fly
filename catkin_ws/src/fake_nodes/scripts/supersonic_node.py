@@ -5,7 +5,7 @@ from lidar_data.msg import LidarPose
 
 def callback(lidar_msg):
     global pub, msg
-    msg.data = int(lidar_msg.x * 100 - 22.5)
+    msg.data = int((lidar_msg.x - 0.225 - 0.1) * 100)
     
 
 def supersonic_publisher():

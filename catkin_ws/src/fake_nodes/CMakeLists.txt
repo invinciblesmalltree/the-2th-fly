@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(fack_nodes)
+project(fake_nodes)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -102,7 +102,7 @@ cv_detect)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES fack_nodes
+#  LIBRARIES fake_nodes
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 CATKIN_DEPENDS cv_detect std_msgs
@@ -121,7 +121,7 @@ ${catkin_INCLUDE_DIRS}
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/fack_nodes.cpp
+#   src/${PROJECT_NAME}/fake_nodes.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -132,7 +132,7 @@ ${catkin_INCLUDE_DIRS}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/fack_nodes_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/fake_nodes_node.cpp)
 catkin_install_python(PROGRAMS 
   scripts/barcode_node.py
   scripts/blue_node.py
@@ -202,7 +202,7 @@ catkin_install_python(PROGRAMS
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_fack_nodes.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_fake_nodes.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

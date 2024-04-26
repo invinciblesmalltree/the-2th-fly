@@ -53,6 +53,7 @@
   <depend>mavros</depend>
   <depend>roscpp</depend>
   <depend>lidar_data</depend>
+  <depend>cv_detect</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

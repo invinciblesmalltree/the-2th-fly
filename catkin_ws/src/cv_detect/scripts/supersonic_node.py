@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#-*-coding:utf-8-*-
 import rospy
 import Jetson.GPIO as GPIO
 from std_msgs.msg import Int32
@@ -43,3 +45,4 @@ while True:
     if distance is not None:
         pub.publish(distance)
         rate.sleep()
+GPIO.cleanup()

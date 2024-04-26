@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   tf2
   lidar_data
+  cv_detect
 )
 
 ## System dependencies are found with CMake's conventions

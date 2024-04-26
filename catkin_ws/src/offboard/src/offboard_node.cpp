@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     bool has_passed_blue = false;
     bool has_passed_half = false;
     target blue_point(0, 0, 0, 0);
-    target scan_point(0.6, -1.0, 1.5, -M_PI);
+    target scan_point(0.7, -1.0, 1.5, -M_PI);
     target pole_point(0, -1.0, 1.5, -M_PI);
     target round_point(0, -1.0, 1.5, -M_PI);
 
@@ -144,12 +144,11 @@ int main(int argc, char **argv) {
                     offb_set_mode.response.mode_sent) {
                     ROS_INFO("Offboard enabled");
                     ROS_INFO("Mode: %s", current_state.mode.c_str());
+                    break;
                 }
                 last_request = ros::Time::now();
             }
         }
-        if (current_state.armed && current_state.mode == "OFFBOARD")
-            break;
         ros::spinOnce();
         rate.sleep();
     }
@@ -187,7 +186,7 @@ int main(int argc, char **argv) {
             }
         } else if (mode == 1) { // 蓝色物体检测并悬停代码
             blue_point.fly_to_target(local_pos_pub);
-            if (ros::Time::now() - last_request > ros::Duration(5.0)) {
+            if (ros::Time::now() - last_request > ros::Duration(7.0)) {
                 has_passed_blue = true;
                 mode = 2;
                 ROS_INFO("Mode 2");

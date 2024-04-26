@@ -50,6 +50,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
    FILES
    LedMsg.msg
+   BarMsg.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -159,7 +160,7 @@ catkin_install_python(PROGRAMS
 )
 
 catkin_install_python(PROGRAMS 
-  scripts/barcode.py
+  scripts/barcode_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

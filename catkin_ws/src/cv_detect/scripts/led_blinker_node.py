@@ -10,16 +10,12 @@ from cv_detect.msg import LedMsg
 def detect_blue_objects(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    # 蓝色的HSV
-    lower_blue = np.array([100, 100, 100])
-    upper_blue = np.array([140, 255, 255])
+    # 定义条形码颜色在 HSV 颜色空间中的范围
+    lower_color = np.array([0, 0, 0])  # 条形码颜色的下界
+    upper_color = np.array([180, 255, 100])  # 条形码颜色的上界
 
-    # 蓝色掩模
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
-
-    # 除噪
-    mask = cv2.dilate(mask, (3, 3), iterations=2)
-    mask = cv2.erode(mask, (3,3), iterations=2)
+    # 对原始图像应用掩膜
+    qr_code = cv2.bitwise_and(img, img, mask=mask)
 
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -35,7 +31,7 @@ def detect_blue_objects(image):
 
     return None
 
-def blink_led(times):
+def normal_blink(times):
     # 设置GPIO模式为board
     GPIO.setmode(GPIO.BOARD)  
 
@@ -45,9 +41,9 @@ def blink_led(times):
 
     for _ in range(times):
         GPIO.output(LED_PIN, GPIO.HIGH)
-        time.sleep(1)
+        time.sleep(0.5)
         GPIO.output(LED_PIN, GPIO.LOW)
-        time.sleep(1)
+        time.sleep(0.5)
 
 # 初始化节点
 rospy.init_node('led_node', anonymous=True)
@@ -78,6 +74,7 @@ while(1):
             led_msg.value = True
             led_msg.delta_x, led_msg.delta_y= delta
 
+        # normal_blink(5)
         pub.publish(led_msg)
 
         # 保存视频帧到本地便于查看

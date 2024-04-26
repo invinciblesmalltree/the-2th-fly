@@ -10,12 +10,12 @@ from cv_detect.msg import LedMsg
 def detect_blue_objects(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    # 定义条形码颜色在 HSV 颜色空间中的范围
-    lower_color = np.array([0, 0, 0])  # 条形码颜色的下界
-    upper_color = np.array([180, 255, 100])  # 条形码颜色的上界
+    # 定义蓝色的HSV范围
+    lower_blue = np.array([100, 43, 46])
+    upper_blue = np.array([124, 255, 255])
 
-    # 对原始图像应用掩膜
-    qr_code = cv2.bitwise_and(img, img, mask=mask)
+    # 提取蓝色区域
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 

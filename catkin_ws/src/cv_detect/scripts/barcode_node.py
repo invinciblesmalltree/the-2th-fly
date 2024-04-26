@@ -101,7 +101,7 @@ while(1):
         bar_msg.delta_x = detect_green(frame, width)
         if not pole_detected:
             bar_msg.n = -1
-            if bar_msg.delta_x < 50:
+            if abs(bar_msg.delta_x) < 50:
                 pole_detected = True
 
         if pole_detected and not led_open:

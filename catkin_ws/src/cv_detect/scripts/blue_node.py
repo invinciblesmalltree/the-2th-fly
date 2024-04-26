@@ -21,8 +21,9 @@ def detect_blue_objects(image):
 
     for contour in contours:
         area = cv2.contourArea(contour)
+        approx = cv2.approxPolyDP(contour, 0.04 * cv2.arcLength(contour, True), True)
 
-        if area > 1000:
+        if len(approx) == 4 and area > 100:
             # 找到图形轮廓中心坐标
             M = cv2.moments(contour)
             delta_x = int(M['m10'] / M['m00']-width/2)

@@ -55,9 +55,9 @@ def blink_led(times):
 
     for _ in range(times):
         GPIO.output(LED_PIN, GPIO.HIGH)
-        time.sleep(0.5)
+        time.sleep(0.25)
         GPIO.output(LED_PIN, GPIO.LOW)
-        time.sleep(0.5)
+        time.sleep(0.25)
 
 # 初始化节点
 rospy.init_node('barcode_node', anonymous=True)
@@ -88,6 +88,9 @@ while(1):
             if ret is None:
                 bar_msg.n = -1
             else:
+                if ret < 1 or ret > 9:
+                    rate.sleep()
+                    continue
                 led_open = True
                 bar_msg.n= ret
                 rospy.loginfo('Barcode: %s', ret)
@@ -96,7 +99,7 @@ while(1):
             pub.publish(bar_msg)
 
         # 每10秒闪烁1轮
-        if led_open and rospy.Time.now()-last_request > rospy.Duration(10):
+        if led_open and rospy.Time.now()-last_request > rospy.Duration(5):
             blink_led(ret)
             last_request = rospy.Time.now()
 

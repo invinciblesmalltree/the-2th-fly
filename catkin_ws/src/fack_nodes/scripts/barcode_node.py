@@ -5,7 +5,7 @@ from lidar_data.msg import LidarPose
 
 def callback(lidar_msg):
     global pub, bar_msg
-    bar_msg.delta_x = -1 - lidar_msg.y
+    bar_msg.delta_x = int(-1 - lidar_msg.y)
 
 def barcode_publisher():
     global pub, bar_msg

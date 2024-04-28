@@ -17,6 +17,17 @@ def detect_green(image, width):
     upper_green = np.array([77, 255, 255])
 
     mask = cv2.inRange(hsv_image, lower_green, upper_green)
+
+    # 设置红色的低值和高值阈值
+    # lower_red1 = np.array([0, 120, 50])
+    # upper_red1 = np.array([10, 255, 255])
+    # lower_red2 = np.array([160, 120, 50])
+    # upper_red2 = np.array([179, 255, 255])
+
+    # # 创建红色区域的掩模
+    # mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
+    # mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
+    # mask = cv2.bitwise_or(mask1, mask2)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
         # 取最大的轮廓

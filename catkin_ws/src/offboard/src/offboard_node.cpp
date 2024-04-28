@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     size_t target_index = 0;
     int mode = 0;
     int n = 0;
-    bool has_passed_blue = false;
+    bool has_passed_blue = true;
     bool has_passed_half = false;
     target blue_point(0, 0, 0, 0);
     target first_scan_point(1.0, -1.0, 1.25, -M_PI);
@@ -169,6 +169,8 @@ int main(int argc, char **argv) {
                          pow(lidar_pose_data.y - targets[target_index].y, 2) +
                          pow(lidar_pose_data.z - targets[target_index].z, 2));
                 if (distance < 0.1) {
+                    if(target_index == 2)
+                        has_passed_blue = false;
                     targets[target_index].reached = true;
                     ROS_INFO("Reached target %zu", target_index);
                     target_index++;
@@ -214,10 +216,14 @@ int main(int argc, char **argv) {
                     scan_point.reached = true;
             } else {
                 vel_msg.twist.linear.x = 0;
-                vel_msg.twist.linear.y = barcode_data.delta_x > 0 ? 0.1 : -0.1;
+                if (barcode_data.delta_x > 500)
+                    vel_msg.twist.linear.y = 0;
+                else
+                    vel_msg.twist.linear.y =
+                        barcode_data.delta_x > 0 ? 0.1 : -0.1;
                 vel_msg.twist.linear.z = 0;
                 velocity_pub.publish(vel_msg);
-                // ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
+                ROS_INFO("Supersonic data: %dcm", supersonic_data.data);
 
                 if (abs(barcode_data.delta_x) < 50) {
                     if (supersonic_data.data > 100)
@@ -239,6 +245,21 @@ int main(int argc, char **argv) {
                     ROS_INFO("Pole: (%f, %f)", pole_point.x, pole_point.y);
                     ROS_INFO("Mode 3");
                 }
+
+                // mode = 3;
+                // pole_point.x = 0.0;
+                // pole_point.y = -1.0;
+                // pole_point.z = 1.25;
+                // pole_point.yaw = -M_PI;
+                // scan_point.x = 0.4;
+                // scan_point.y = -1.0;
+                // scan_point.z = 1.25;
+                // scan_point.yaw = -M_PI;
+                // scan_point.reached = false;
+                // round_point.x = 0.5;
+                // round_point.y = -1.0;
+                // round_point.z = 1.25;
+                // round_point.yaw = -M_PI;
             }
         } else if (mode == 3) { // 扫码代码
             if (!scan_point.reached) {

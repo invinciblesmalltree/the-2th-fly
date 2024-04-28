@@ -11,11 +11,19 @@ def detect_blue_objects(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # 定义蓝色的HSV范围
-    lower_blue = np.array([100, 43, 46])
+    lower_blue = np.array([100, 43, 60])
     upper_blue = np.array([124, 255, 255])
 
     # 提取蓝色区域
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    mask1 = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    # 提取蓝色区域（在RGB空间中）
+    lower_blue = np.array([100, 0, 0])  # 更低的红色和绿色，更高的蓝色分量
+    upper_blue = np.array([255, 80, 80])
+
+    # 提取蓝色区域
+    mask2 = cv2.inRange(image, lower_blue, upper_blue)
+    mask = cv2.bitwise_and(mask1, mask2)
 
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -28,6 +36,9 @@ def detect_blue_objects(image):
             M = cv2.moments(contour)
             delta_x = int(M['m10'] / M['m00']-width/2)
             delta_y = -int(M['m01'] / M['m00']-height/2)
+            x, y, w, h = cv2.boundingRect(approx)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
             return delta_x, delta_y
 
     return None
@@ -49,7 +60,7 @@ def normal_blink(times):
 # 初始化节点
 rospy.init_node('blue_node', anonymous=True)
 
-pub = rospy.Publisher('bule_msg', LedMsg, queue_size=10)
+pub = rospy.Publisher('blue_msg', LedMsg, queue_size=10)
 rate = rospy.Rate(20)
 
 # cv识别程序主体
@@ -58,8 +69,8 @@ capture = cv2.VideoCapture('/dev/ground')
 while(1):
     if capture.isOpened():
         open, frame = capture.read()
-        cv2.imshow('frame', frame)
-        cv2.waitKey(1)
+        height, width = frame.shape[:2]
+        frame = frame[height // 2: height, 0: width]
 
         # 获取视频信息
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -68,6 +79,10 @@ while(1):
         led_msg = LedMsg()
 
         delta = detect_blue_objects(frame)
+
+        cv2.imshow('frame', frame)
+        cv2.waitKey(1)
+
         if delta is None:
             led_msg.value = False
         else:

@@ -62,10 +62,6 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "pose_stamped_node");
     PoseDataNode node;
 
-    ros::Rate rate(20); // 设置为 20 Hz
-    while (ros::ok()) {
-        ros::spin();
-        rate.sleep();
-    }
+    ros::spin();
     return 0;
 }
